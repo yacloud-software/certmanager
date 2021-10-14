@@ -28,13 +28,14 @@ import (
 )
 
 var (
-	debug      = flag.Bool("debug", false, "debug mode")
-	port       = flag.Int("port", 4100, "The grpc server port")
-	legoClient *lego.Client
-	certStore  *db.DBCertificate
-	authStore  *db.DBStoreAuth
-	reqChannel = make(chan *requestCertificate, 50)
-	psql       *sql.DB
+	cert_retrieve_service = flag.String("cert_allowed_service", "37", "service id of the service serving the certs (usually h2gproxy)")
+	debug                 = flag.Bool("debug", false, "debug mode")
+	port                  = flag.Int("port", 4100, "The grpc server port")
+	legoClient            *lego.Client
+	certStore             *db.DBCertificate
+	authStore             *db.DBStoreAuth
+	reqChannel            = make(chan *requestCertificate, 50)
+	psql                  *sql.DB
 )
 
 type CertServer struct {
@@ -156,7 +157,7 @@ func (e *CertServer) ListPublicCertificates(ctx context.Context, req *common.Voi
 
 func checkAccess(ctx context.Context, cert *pb.Certificate) error {
 	service := auth.GetService(ctx)
-	if service != nil && service.ID == "37" {
+	if service != nil && service.ID == *cert_retrieve_service {
 		return nil
 	}
 
