@@ -132,6 +132,7 @@ func helpHandler(w http.ResponseWriter, req *http.Request, sd *serverDef) {
 	s = s + "<a href=\"/internal/pleaseshutdown\">shutdown</a><br/>"
 	s = s + "<a href=\"/internal/service-info/version\">VersionInfo</a><br/>"
 	s = s + "<a href=\"/internal/service-info/metrics\">metrics</a><br/>"
+	s = s + "<a href=\"/internal/clearcache\">clearcache</a> (append /name to clear a specific cache)<br/>"
 	s = s + "<a href=\"/internal/parameters\">parameters</a><br/>"
 	s = s + "<a href=\"/internal/service-info/grpc-connections\">GRPC Connections</a><br/>"
 	s = s + "<a href=\"/internal/debug/info\">Go-Profiler</a><br/>"

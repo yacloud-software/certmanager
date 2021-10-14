@@ -338,6 +338,9 @@ func startHttpServe(sd *serverDef, grpcServer *grpc.Server) error {
 	mux.HandleFunc("/internal/help", func(w http.ResponseWriter, req *http.Request) {
 		helpHandler(w, req, sd)
 	})
+	mux.HandleFunc("/internal/clearcache", func(w http.ResponseWriter, req *http.Request) {
+		clearCacheHandler(w, req)
+	})
 	mux.HandleFunc("/internal/parameters", func(w http.ResponseWriter, req *http.Request) {
 		paraHandler(w, req, sd)
 	})
@@ -391,6 +394,8 @@ func grpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Ha
 				fancyPrintf("Serving debug path %s\n", path)
 			}
 			debugHandler(w, r)
+		} else if strings.HasPrefix(path, "/internal/clearcache") {
+			clearCacheHandler(w, r)
 		} else if strings.HasPrefix(path, "/internal/") {
 			if *debug_internal_serve {
 				fancyPrintf("Serving path %s\n", path)

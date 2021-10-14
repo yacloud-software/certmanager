@@ -7,6 +7,7 @@ package cache
 // like redis if that becomes benefitial
 
 import (
+	"fmt"
 	"golang.conradwood.net/go-easyops/prometheus"
 	"golang.conradwood.net/go-easyops/utils"
 	"sync"
@@ -14,6 +15,7 @@ import (
 )
 
 var (
+	cacheLock   sync.Mutex
 	performance = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Name:       "goeasyops_cache_performance",
@@ -44,6 +46,7 @@ var (
 		},
 		[]string{"cachename"},
 	)
+	caches []*Cache
 )
 
 type Cache struct {
@@ -65,6 +68,22 @@ type cacheEntry struct {
 func init() {
 	prometheus.MustRegister(efficiency, size, performance, usage)
 }
+func Clear(cacheName string) ([]*Cache, error) {
+	fmt.Printf("[go-easyops] Clearing cache \"%s\"\n", cacheName)
+	cacheLock.Lock()
+	defer cacheLock.Unlock()
+	var res []*Cache
+	for _, c := range caches {
+		if cacheName != "" && c.name != cacheName {
+			continue
+		}
+		c.mlock.Lock()
+		c.mcache = make([]*cacheEntry, 0)
+		c.mlock.Unlock()
+		res = append(res, c)
+	}
+	return res, nil
+}
 
 // create a new cache. "name" must be a prometheus metric compatible name and unique throughout
 // good practice: prefix it with servicepackagename. for example:
@@ -74,6 +93,9 @@ func New(name string, lifetime time.Duration, maxSizeInMB int) *Cache {
 	res := &Cache{name: name, MaxLifetime: lifetime}
 	res.setCacheGauge(0)
 	go res.setCacheGaugeLoop()
+	cacheLock.Lock()
+	caches = append(caches, res)
+	cacheLock.Unlock()
 	return res
 }
 func (c *Cache) Clear() {
@@ -185,4 +207,8 @@ func (c *Cache) setCacheGauge(used int) {
 	size.With(prometheus.Labels{"cachename": c.name, "et": "allocated"}).Set(float64(len(c.mcache)))
 	size.With(prometheus.Labels{"cachename": c.name, "et": "used"}).Set(float64(used))
 
+}
+
+func (c *Cache) Name() string {
+	return c.name
 }

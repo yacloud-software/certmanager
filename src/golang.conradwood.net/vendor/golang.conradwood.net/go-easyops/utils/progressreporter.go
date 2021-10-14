@@ -33,6 +33,7 @@ type ProgressReporter struct {
 	done        uint64
 	RawPrint    bool
 	addlock     sync.Mutex
+	Prefix      string
 }
 
 func (p *ProgressReporter) SetTotal(total uint64) {
@@ -123,9 +124,13 @@ func (p *ProgressReporter) String() string {
 	p.lastPrinted = time.Now()
 	eta_s := p.Eta().Format("2006-01-02 15:04:05")
 	perc := float32(float32(p.done) / float32(p.total) * float32(100))
-	prefix := fmt.Sprintf("Processing %d", p.done)
+	sp := ""
+	if p.Prefix != "" {
+		sp = fmt.Sprintf("[%s]: ", p.Prefix)
+	}
+	prefix := fmt.Sprintf("%sProcessing %d", sp, p.done)
 	if p.total != 0 {
-		prefix = fmt.Sprintf("Processing %d of %d (%2.1f%%), ETA: %v", p.done, p.total, perc, eta_s)
+		prefix = fmt.Sprintf("%sProcessing %d of %d (%2.1f%%), ETA: %v", sp, p.done, p.total, perc, eta_s)
 	}
 	if p.RawPrint {
 		return prefix + fmt.Sprintf(", %.1f/sec", p.Rate())

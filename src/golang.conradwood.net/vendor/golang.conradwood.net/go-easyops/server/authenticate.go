@@ -309,7 +309,7 @@ func build_access_details(ctx context.Context, irr *rc.InterceptRPCRequest) (*rc
 	err = compare_intercept_responses(res, r_res)
 	if err != nil {
 		panic(fmt.Sprintf("Error on intercept response: %s\n", err))
-		return nil, err
+		//		return nil, err
 	}
 
 	return res, nil

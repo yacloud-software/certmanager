@@ -123,6 +123,9 @@ func GetAuthClient() apb.AuthenticationServiceClient {
 // this is an expensive call ! (also calls rpcinterceptor)
 // this is not privileged (user must be signed)
 func ContextForUser(user *apb.User) (context.Context, error) {
+	return ContextForUserWithTimeout(user, 0) //default timeout
+}
+func ContextForUserWithTimeout(user *apb.User, secs uint64) (context.Context, error) {
 	if user == nil {
 		return nil, fmt.Errorf("Missing user")
 	}
@@ -182,7 +185,11 @@ func ContextForUser(user *apb.User) (context.Context, error) {
 		return nil, err
 	}
 	newmd = metadata.Pairs(tokens.METANAME, mts)
-	ctx = tokens.ContextWithToken()
+	if secs == 0 {
+		ctx = tokens.ContextWithToken()
+	} else {
+		ctx = tokens.ContextWithTokenAndTimeout(secs)
+	}
 	ctx = context.WithValue(ctx, rpc.LOCALCONTEXTNAME, cs)
 	res = metadata.NewOutgoingContext(ctx, newmd)
 	cs.Context = ctx
