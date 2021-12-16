@@ -100,12 +100,26 @@ func list() {
 	ctx := authremote.Context()
 	response, err := certClient.ListPublicCertificates(ctx, &common.Void{})
 	utils.Bail("Failed to ping server", err)
-	fmt.Printf("Response to ping: %v\n", response)
+	t := utils.Table{}
+	t.AddHeaders("Hostname", "Expiry", "In days")
 	for _, c := range response.Certificates {
 		mr := time.Unix(int64(c.Expiry), 0)
 		days := mr.Sub(time.Now()).Hours() / 24
 		fmt.Printf("Hostname: %s, Expiry: %v (%f days)\n", c.Hostname, mr, days)
+		t.AddString(c.Hostname)
+		e := ""
+		if days < 0 {
+			e = " EXPIRED "
+		}
+		t.AddString(fmt.Sprintf("%v%s", mr, e))
+		if days < 0 {
+			t.AddInt(0)
+		} else {
+			t.AddInt(int(days))
+		}
+		t.NewRow()
 	}
+	fmt.Printf(t.ToPrettyString())
 }
 
 func requestCert(host string) {
