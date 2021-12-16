@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package certmanager;
+option java_package = "net.conradwood.golang.apis.certmanager";
+import "golang.conradwood.net/apis/common/common.proto";
+import "golang.conradwood.net/apis/h2gproxy/h2gproxy.proto";
+
+// database type to temporarily store tokens by acme
+message StoreAuth {
+  uint64 ID = 1;
+  string Domain = 2;  // the "host" we want the cert for
+  string Token = 3;   // acme token
+  string KeyAuth = 4; // acme response
+  uint32 Created = 5; // when was this created
+}
+
+// database
+message Certificate {
+  uint64 ID = 1;
+  string Host = 2;           // the hostname this certificate is for
+  string PemCertificate = 3; // the pem encoded certificate
+  string PemPrivateKey = 4;  // the pem encoded private key
+  string PemCA = 5;          // the pem encoded CA certificate
+  uint32 Created = 6;        // created timestamp
+  uint32 Expiry = 7;         // expiry timestamp
+  string CreatorUser = 8;    // user who requested it
+  string CreatorService = 9; // service which requested it
+  uint32 LastAttempt = 10;   // last attempt to retrieve one
+}
+// derived certificate, pre-processed
+message ProcessedCertificate {
+  Certificate Cert = 1;
+  // ready to add to tls.Certificate
+  repeated bytes TLSCerts = 2;
+}
+
+enum VerifyType {
+  INVALID = 0;
+  DNS = 1;
+  HTTP = 2;
+}
+message PublicCertRequest {
+  string Hostname = 1;
+  VerifyType VerifyType = 2;
+}
+
+message CertInfo {
+  string Hostname = 1;
+  uint32 Created = 2;
+  uint32 Expiry = 3;
+}
+
+message CertNameList {
+  repeated CertInfo Certificates = 1;
+}
+message GetVerificationRequest {
+  string Hostname = 1;
+}
+message ImportRequest {
+  string Hostname = 1;       // the hostname (must match certificate CN/DNSName)
+  string PemCertificate = 2; // the pem encoded certificate
+  string PemPrivateKey = 3;  // the pem encoded private key
+}
+
+// comment: certmanager description
+service CertManager {
+  // import a public certificate
+  rpc ImportPublicCertificate(ImportRequest) returns (Certificate);
+  // list all certs
+  rpc ListPublicCertificates(common.Void) returns (CertNameList);
+  // request a certificate. The lego/acme library is designed to synchronous execution.
+  // (Its primary usecase seems to be command line tools)
+  // this means we can only trigger it but do not get a response.
+  // we have to poll GetPublicCertificate after requesting it until it is available
+  rpc RequestPublicCertificate(PublicCertRequest) returns (common.Void);
+  // get a certificate from the certificate store. If none is available it
+  // will return an error
+  rpc GetPublicCertificate(PublicCertRequest) returns (ProcessedCertificate);
+  // serve acme URLs (permission from h2gproxy only)
+  rpc ServeHTML(h2gproxy.ServeRequest) returns (h2gproxy.ServeResponse);
+}
