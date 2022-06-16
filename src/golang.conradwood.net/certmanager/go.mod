@@ -9,7 +9,7 @@ require (
 	golang.conradwood.net/apis/certmanager v0.0.0-00010101000000-000000000000
 	golang.conradwood.net/apis/common v1.1.1746
 	golang.conradwood.net/apis/h2gproxy v1.1.1746
-	golang.conradwood.net/go-easyops v0.1.12713
+	golang.conradwood.net/go-easyops v0.1.12738
 	golang.org/x/net v0.0.0-20220615171555-694bf12d69de
 	google.golang.org/grpc v1.47.0
 )
