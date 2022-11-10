@@ -131,7 +131,7 @@ func request(r *requestCertificate) error {
 	createAttempt(hostname)
 	certificates, err := legoClient.Certificate.Obtain(legorequest)
 	if err != nil {
-		failAttempt(ctx, hostname)
+		failAttempt(ctx, hostname, err)
 		return err
 	}
 
@@ -170,7 +170,7 @@ func request(r *requestCertificate) error {
 	clearStore(ctx, hostname)
 	return nil
 }
-func failAttempt(ctx context.Context, hostname string) {
+func failAttempt(ctx context.Context, hostname string, cert_error error) {
 	var cur *pb.Certificate
 	dbc, err := certStore.ByHost(ctx, hostname)
 	if err != nil {
@@ -182,6 +182,7 @@ func failAttempt(ctx context.Context, hostname string) {
 	}
 	cur = dbc[0]
 	cur.LastAttempt = uint32(time.Now().Unix())
+	cur.LastError = fmt.Sprintf("%s", cert_error)
 	err = certStore.Update(ctx, cur)
 	if err != nil {
 		fmt.Printf("Unable to update db for cert for host %s: %s\n", hostname, err)

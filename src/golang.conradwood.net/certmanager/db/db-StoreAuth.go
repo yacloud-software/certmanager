@@ -16,27 +16,62 @@ package db
 
 Main Table:
 
- CREATE TABLE storeauth (id integer primary key default nextval('storeauth_seq'),domain varchar(2000) not null,token varchar(2000) not null,keyauth varchar(2000) not null,created integer not null);
+ CREATE TABLE storeauth (id integer primary key default nextval('storeauth_seq'),domain text not null  ,token text not null  ,keyauth text not null  ,created integer not null  );
+
+Alter statements:
+ALTER TABLE storeauth ADD COLUMN domain text not null default '';
+ALTER TABLE storeauth ADD COLUMN token text not null default '';
+ALTER TABLE storeauth ADD COLUMN keyauth text not null default '';
+ALTER TABLE storeauth ADD COLUMN created integer not null default 0;
+
 
 Archive Table: (structs can be moved from main to archive using Archive() function)
 
- CREATE TABLE storeauth_archive (id integer unique not null,domain varchar(2000) not null,token varchar(2000) not null,keyauth varchar(2000) not null,created integer not null);
+ CREATE TABLE storeauth_archive (id integer unique not null,domain text not null,token text not null,keyauth text not null,created integer not null);
 */
 
 import (
+	"context"
 	gosql "database/sql"
 	"fmt"
 	savepb "golang.conradwood.net/apis/certmanager"
 	"golang.conradwood.net/go-easyops/sql"
-	"golang.org/x/net/context"
+	"os"
+)
+
+var (
+	default_def_DBStoreAuth *DBStoreAuth
 )
 
 type DBStoreAuth struct {
-	DB *sql.DB
+	DB                  *sql.DB
+	SQLTablename        string
+	SQLArchivetablename string
 }
 
+func DefaultDBStoreAuth() *DBStoreAuth {
+	if default_def_DBStoreAuth != nil {
+		return default_def_DBStoreAuth
+	}
+	psql, err := sql.Open()
+	if err != nil {
+		fmt.Printf("Failed to open database: %s\n", err)
+		os.Exit(10)
+	}
+	res := NewDBStoreAuth(psql)
+	ctx := context.Background()
+	err = res.CreateTable(ctx)
+	if err != nil {
+		fmt.Printf("Failed to create table: %s\n", err)
+		os.Exit(10)
+	}
+	default_def_DBStoreAuth = res
+	return res
+}
 func NewDBStoreAuth(db *sql.DB) *DBStoreAuth {
 	foo := DBStoreAuth{DB: db}
+	foo.SQLTablename = "storeauth"
+	foo.SQLArchivetablename = "storeauth_archive"
 	return &foo
 }
 
@@ -50,7 +85,7 @@ func (a *DBStoreAuth) Archive(ctx context.Context, id uint64) error {
 	}
 
 	// now save it to archive:
-	_, e := a.DB.ExecContext(ctx, "insert_DBStoreAuth", "insert into storeauth_archive (id,domain, token, keyauth, created) values ($1,$2, $3, $4, $5) ", p.ID, p.Domain, p.Token, p.KeyAuth, p.Created)
+	_, e := a.DB.ExecContext(ctx, "archive_DBStoreAuth", "insert into "+a.SQLArchivetablename+" (id,domain, token, keyauth, created) values ($1,$2, $3, $4, $5) ", p.ID, p.Domain, p.Token, p.KeyAuth, p.Created)
 	if e != nil {
 		return e
 	}
@@ -62,18 +97,19 @@ func (a *DBStoreAuth) Archive(ctx context.Context, id uint64) error {
 
 // Save (and use database default ID generation)
 func (a *DBStoreAuth) Save(ctx context.Context, p *savepb.StoreAuth) (uint64, error) {
-	rows, e := a.DB.QueryContext(ctx, "DBStoreAuth_Save", "insert into storeauth (domain, token, keyauth, created) values ($1, $2, $3, $4) returning id", p.Domain, p.Token, p.KeyAuth, p.Created)
+	qn := "DBStoreAuth_Save"
+	rows, e := a.DB.QueryContext(ctx, qn, "insert into "+a.SQLTablename+" (domain, token, keyauth, created) values ($1, $2, $3, $4) returning id", p.Domain, p.Token, p.KeyAuth, p.Created)
 	if e != nil {
-		return 0, e
+		return 0, a.Error(ctx, qn, e)
 	}
 	defer rows.Close()
 	if !rows.Next() {
-		return 0, fmt.Errorf("No rows after insert")
+		return 0, a.Error(ctx, qn, fmt.Errorf("No rows after insert"))
 	}
 	var id uint64
 	e = rows.Scan(&id)
 	if e != nil {
-		return 0, fmt.Errorf("failed to scan id after insert: %s", e)
+		return 0, a.Error(ctx, qn, fmt.Errorf("failed to scan id after insert: %s", e))
 	}
 	p.ID = id
 	return id, nil
@@ -81,47 +117,73 @@ func (a *DBStoreAuth) Save(ctx context.Context, p *savepb.StoreAuth) (uint64, er
 
 // Save using the ID specified
 func (a *DBStoreAuth) SaveWithID(ctx context.Context, p *savepb.StoreAuth) error {
-	_, e := a.DB.ExecContext(ctx, "insert_DBStoreAuth", "insert into storeauth (id,domain, token, keyauth, created) values ($1,$2, $3, $4, $5) ", p.ID, p.Domain, p.Token, p.KeyAuth, p.Created)
-	return e
+	qn := "insert_DBStoreAuth"
+	_, e := a.DB.ExecContext(ctx, qn, "insert into "+a.SQLTablename+" (id,domain, token, keyauth, created) values ($1,$2, $3, $4, $5) ", p.ID, p.Domain, p.Token, p.KeyAuth, p.Created)
+	return a.Error(ctx, qn, e)
 }
 
 func (a *DBStoreAuth) Update(ctx context.Context, p *savepb.StoreAuth) error {
-	_, e := a.DB.ExecContext(ctx, "DBStoreAuth_Update", "update storeauth set domain=$1, token=$2, keyauth=$3, created=$4 where id = $5", p.Domain, p.Token, p.KeyAuth, p.Created, p.ID)
+	qn := "DBStoreAuth_Update"
+	_, e := a.DB.ExecContext(ctx, qn, "update "+a.SQLTablename+" set domain=$1, token=$2, keyauth=$3, created=$4 where id = $5", p.Domain, p.Token, p.KeyAuth, p.Created, p.ID)
 
-	return e
+	return a.Error(ctx, qn, e)
 }
 
 // delete by id field
 func (a *DBStoreAuth) DeleteByID(ctx context.Context, p uint64) error {
-	_, e := a.DB.ExecContext(ctx, "deleteDBStoreAuth_ByID", "delete from storeauth where id = $1", p)
-	return e
+	qn := "deleteDBStoreAuth_ByID"
+	_, e := a.DB.ExecContext(ctx, qn, "delete from "+a.SQLTablename+" where id = $1", p)
+	return a.Error(ctx, qn, e)
 }
 
 // get it by primary id
 func (a *DBStoreAuth) ByID(ctx context.Context, p uint64) (*savepb.StoreAuth, error) {
-	rows, e := a.DB.QueryContext(ctx, "DBStoreAuth_ByID", "select id,domain, token, keyauth, created from storeauth where id = $1", p)
+	qn := "DBStoreAuth_ByID"
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,domain, token, keyauth, created from "+a.SQLTablename+" where id = $1", p)
 	if e != nil {
-		return nil, fmt.Errorf("ByID: error querying (%s)", e)
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByID: error querying (%s)", e))
 	}
 	defer rows.Close()
 	l, e := a.FromRows(ctx, rows)
 	if e != nil {
-		return nil, fmt.Errorf("ByID: error scanning (%s)", e)
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByID: error scanning (%s)", e))
 	}
 	if len(l) == 0 {
-		return nil, fmt.Errorf("No StoreAuth with id %d", p)
+		return nil, a.Error(ctx, qn, fmt.Errorf("No StoreAuth with id %v", p))
 	}
 	if len(l) != 1 {
-		return nil, fmt.Errorf("Multiple (%d) StoreAuth with id %d", len(l), p)
+		return nil, a.Error(ctx, qn, fmt.Errorf("Multiple (%d) StoreAuth with id %v", len(l), p))
+	}
+	return l[0], nil
+}
+
+// get it by primary id (nil if no such ID row, but no error either)
+func (a *DBStoreAuth) TryByID(ctx context.Context, p uint64) (*savepb.StoreAuth, error) {
+	qn := "DBStoreAuth_TryByID"
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,domain, token, keyauth, created from "+a.SQLTablename+" where id = $1", p)
+	if e != nil {
+		return nil, a.Error(ctx, qn, fmt.Errorf("TryByID: error querying (%s)", e))
+	}
+	defer rows.Close()
+	l, e := a.FromRows(ctx, rows)
+	if e != nil {
+		return nil, a.Error(ctx, qn, fmt.Errorf("TryByID: error scanning (%s)", e))
+	}
+	if len(l) == 0 {
+		return nil, nil
+	}
+	if len(l) != 1 {
+		return nil, a.Error(ctx, qn, fmt.Errorf("Multiple (%d) StoreAuth with id %v", len(l), p))
 	}
 	return l[0], nil
 }
 
 // get all rows
 func (a *DBStoreAuth) All(ctx context.Context) ([]*savepb.StoreAuth, error) {
-	rows, e := a.DB.QueryContext(ctx, "DBStoreAuth_all", "select id,domain, token, keyauth, created from storeauth order by id")
+	qn := "DBStoreAuth_all"
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,domain, token, keyauth, created from "+a.SQLTablename+" order by id")
 	if e != nil {
-		return nil, fmt.Errorf("All: error querying (%s)", e)
+		return nil, a.Error(ctx, qn, fmt.Errorf("All: error querying (%s)", e))
 	}
 	defer rows.Close()
 	l, e := a.FromRows(ctx, rows)
@@ -137,69 +199,149 @@ func (a *DBStoreAuth) All(ctx context.Context) ([]*savepb.StoreAuth, error) {
 
 // get all "DBStoreAuth" rows with matching Domain
 func (a *DBStoreAuth) ByDomain(ctx context.Context, p string) ([]*savepb.StoreAuth, error) {
-	rows, e := a.DB.QueryContext(ctx, "DBStoreAuth_ByDomain", "select id,domain, token, keyauth, created from storeauth where domain = $1", p)
+	qn := "DBStoreAuth_ByDomain"
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,domain, token, keyauth, created from "+a.SQLTablename+" where domain = $1", p)
 	if e != nil {
-		return nil, fmt.Errorf("ByDomain: error querying (%s)", e)
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByDomain: error querying (%s)", e))
 	}
 	defer rows.Close()
 	l, e := a.FromRows(ctx, rows)
 	if e != nil {
-		return nil, fmt.Errorf("ByDomain: error scanning (%s)", e)
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByDomain: error scanning (%s)", e))
+	}
+	return l, nil
+}
+
+// the 'like' lookup
+func (a *DBStoreAuth) ByLikeDomain(ctx context.Context, p string) ([]*savepb.StoreAuth, error) {
+	qn := "DBStoreAuth_ByLikeDomain"
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,domain, token, keyauth, created from "+a.SQLTablename+" where domain ilike $1", p)
+	if e != nil {
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByDomain: error querying (%s)", e))
+	}
+	defer rows.Close()
+	l, e := a.FromRows(ctx, rows)
+	if e != nil {
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByDomain: error scanning (%s)", e))
 	}
 	return l, nil
 }
 
 // get all "DBStoreAuth" rows with matching Token
 func (a *DBStoreAuth) ByToken(ctx context.Context, p string) ([]*savepb.StoreAuth, error) {
-	rows, e := a.DB.QueryContext(ctx, "DBStoreAuth_ByToken", "select id,domain, token, keyauth, created from storeauth where token = $1", p)
+	qn := "DBStoreAuth_ByToken"
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,domain, token, keyauth, created from "+a.SQLTablename+" where token = $1", p)
 	if e != nil {
-		return nil, fmt.Errorf("ByToken: error querying (%s)", e)
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByToken: error querying (%s)", e))
 	}
 	defer rows.Close()
 	l, e := a.FromRows(ctx, rows)
 	if e != nil {
-		return nil, fmt.Errorf("ByToken: error scanning (%s)", e)
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByToken: error scanning (%s)", e))
+	}
+	return l, nil
+}
+
+// the 'like' lookup
+func (a *DBStoreAuth) ByLikeToken(ctx context.Context, p string) ([]*savepb.StoreAuth, error) {
+	qn := "DBStoreAuth_ByLikeToken"
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,domain, token, keyauth, created from "+a.SQLTablename+" where token ilike $1", p)
+	if e != nil {
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByToken: error querying (%s)", e))
+	}
+	defer rows.Close()
+	l, e := a.FromRows(ctx, rows)
+	if e != nil {
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByToken: error scanning (%s)", e))
 	}
 	return l, nil
 }
 
 // get all "DBStoreAuth" rows with matching KeyAuth
 func (a *DBStoreAuth) ByKeyAuth(ctx context.Context, p string) ([]*savepb.StoreAuth, error) {
-	rows, e := a.DB.QueryContext(ctx, "DBStoreAuth_ByKeyAuth", "select id,domain, token, keyauth, created from storeauth where keyauth = $1", p)
+	qn := "DBStoreAuth_ByKeyAuth"
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,domain, token, keyauth, created from "+a.SQLTablename+" where keyauth = $1", p)
 	if e != nil {
-		return nil, fmt.Errorf("ByKeyAuth: error querying (%s)", e)
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByKeyAuth: error querying (%s)", e))
 	}
 	defer rows.Close()
 	l, e := a.FromRows(ctx, rows)
 	if e != nil {
-		return nil, fmt.Errorf("ByKeyAuth: error scanning (%s)", e)
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByKeyAuth: error scanning (%s)", e))
+	}
+	return l, nil
+}
+
+// the 'like' lookup
+func (a *DBStoreAuth) ByLikeKeyAuth(ctx context.Context, p string) ([]*savepb.StoreAuth, error) {
+	qn := "DBStoreAuth_ByLikeKeyAuth"
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,domain, token, keyauth, created from "+a.SQLTablename+" where keyauth ilike $1", p)
+	if e != nil {
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByKeyAuth: error querying (%s)", e))
+	}
+	defer rows.Close()
+	l, e := a.FromRows(ctx, rows)
+	if e != nil {
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByKeyAuth: error scanning (%s)", e))
 	}
 	return l, nil
 }
 
 // get all "DBStoreAuth" rows with matching Created
 func (a *DBStoreAuth) ByCreated(ctx context.Context, p uint32) ([]*savepb.StoreAuth, error) {
-	rows, e := a.DB.QueryContext(ctx, "DBStoreAuth_ByCreated", "select id,domain, token, keyauth, created from storeauth where created = $1", p)
+	qn := "DBStoreAuth_ByCreated"
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,domain, token, keyauth, created from "+a.SQLTablename+" where created = $1", p)
 	if e != nil {
-		return nil, fmt.Errorf("ByCreated: error querying (%s)", e)
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByCreated: error querying (%s)", e))
 	}
 	defer rows.Close()
 	l, e := a.FromRows(ctx, rows)
 	if e != nil {
-		return nil, fmt.Errorf("ByCreated: error scanning (%s)", e)
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByCreated: error scanning (%s)", e))
 	}
 	return l, nil
+}
+
+// the 'like' lookup
+func (a *DBStoreAuth) ByLikeCreated(ctx context.Context, p uint32) ([]*savepb.StoreAuth, error) {
+	qn := "DBStoreAuth_ByLikeCreated"
+	rows, e := a.DB.QueryContext(ctx, qn, "select id,domain, token, keyauth, created from "+a.SQLTablename+" where created ilike $1", p)
+	if e != nil {
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByCreated: error querying (%s)", e))
+	}
+	defer rows.Close()
+	l, e := a.FromRows(ctx, rows)
+	if e != nil {
+		return nil, a.Error(ctx, qn, fmt.Errorf("ByCreated: error scanning (%s)", e))
+	}
+	return l, nil
+}
+
+/**********************************************************************
+* Helper to convert from an SQL Query
+**********************************************************************/
+
+// from a query snippet (the part after WHERE)
+func (a *DBStoreAuth) FromQuery(ctx context.Context, query_where string, args ...interface{}) ([]*savepb.StoreAuth, error) {
+	rows, err := a.DB.QueryContext(ctx, "custom_query_"+a.Tablename(), "select "+a.SelectCols()+" from "+a.Tablename()+" where "+query_where, args...)
+	if err != nil {
+		return nil, err
+	}
+	return a.FromRows(ctx, rows)
 }
 
 /**********************************************************************
 * Helper to convert from an SQL Row to struct
 **********************************************************************/
 func (a *DBStoreAuth) Tablename() string {
-	return "storeauth"
+	return a.SQLTablename
 }
 
 func (a *DBStoreAuth) SelectCols() string {
 	return "id,domain, token, keyauth, created"
+}
+func (a *DBStoreAuth) SelectColsQualified() string {
+	return "" + a.SQLTablename + ".id," + a.SQLTablename + ".domain, " + a.SQLTablename + ".token, " + a.SQLTablename + ".keyauth, " + a.SQLTablename + ".created"
 }
 
 func (a *DBStoreAuth) FromRows(ctx context.Context, rows *gosql.Rows) ([]*savepb.StoreAuth, error) {
@@ -208,9 +350,37 @@ func (a *DBStoreAuth) FromRows(ctx context.Context, rows *gosql.Rows) ([]*savepb
 		foo := savepb.StoreAuth{}
 		err := rows.Scan(&foo.ID, &foo.Domain, &foo.Token, &foo.KeyAuth, &foo.Created)
 		if err != nil {
-			return nil, err
+			return nil, a.Error(ctx, "fromrow-scan", err)
 		}
 		res = append(res, &foo)
 	}
 	return res, nil
+}
+
+/**********************************************************************
+* Helper to create table and columns
+**********************************************************************/
+func (a *DBStoreAuth) CreateTable(ctx context.Context) error {
+	csql := []string{
+		`create sequence if not exists ` + a.SQLTablename + `_seq;`,
+		`CREATE TABLE if not exists ` + a.SQLTablename + ` (id integer primary key default nextval('` + a.SQLTablename + `_seq'),domain text not null  ,token text not null  ,keyauth text not null  ,created integer not null  );`,
+		`CREATE TABLE if not exists ` + a.SQLTablename + `_archive (id integer primary key default nextval('` + a.SQLTablename + `_seq'),domain text not null  ,token text not null  ,keyauth text not null  ,created integer not null  );`,
+	}
+	for i, c := range csql {
+		_, e := a.DB.ExecContext(ctx, fmt.Sprintf("create_"+a.SQLTablename+"_%d", i), c)
+		if e != nil {
+			return e
+		}
+	}
+	return nil
+}
+
+/**********************************************************************
+* Helper to meaningful errors
+**********************************************************************/
+func (a *DBStoreAuth) Error(ctx context.Context, q string, e error) error {
+	if e == nil {
+		return nil
+	}
+	return fmt.Errorf("[table="+a.SQLTablename+", query=%s] Error: %s", q, e)
 }
