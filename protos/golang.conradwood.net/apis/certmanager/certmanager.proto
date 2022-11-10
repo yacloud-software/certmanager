@@ -26,6 +26,7 @@ message Certificate {
   string CreatorUser = 8;    // user who requested it
   string CreatorService = 9; // service which requested it
   uint32 LastAttempt = 10;   // last attempt to retrieve one
+  string LastError=11; // last error, if any
 }
 // derived certificate, pre-processed
 message ProcessedCertificate {
