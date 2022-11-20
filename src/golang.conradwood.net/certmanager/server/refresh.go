@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"golang.conradwood.net/go-easyops/prometheus"
 	pb "golang.conradwood.net/apis/certmanager"
+	"golang.conradwood.net/go-easyops/prometheus"
 	"golang.conradwood.net/go-easyops/tokens"
 	"golang.conradwood.net/go-easyops/utils"
 	"sort"
@@ -41,6 +41,7 @@ func refresher() {
 			return certs[i].LastAttempt < certs[j].LastAttempt
 		})
 		cutoff := time.Now().Add(time.Duration(minDays*24) * time.Hour)
+		dorand := time.Now().Add(time.Duration(minDays*12) * time.Hour)
 		for _, c := range certs {
 			if *debug {
 				fmt.Printf("Certificate %s: Expiry: %s, LastAttempt: %s\n",
@@ -53,8 +54,17 @@ func refresher() {
 			l := prometheus.Labels{"host": c.Host}
 			expiryInSecs := int64(c.Expiry) - time.Now().Unix()
 			expiryGauge.With(l).Set(float64(expiryInSecs))
+			// t == expiry date
 			if t.After(cutoff) {
+				// expiry is AFTER now+24 days
 				continue
+			}
+			if t.After(dorand) {
+				// expiry is AFTER now+12 days
+				// space them out a bit, so to avoid letsencrypt limits
+				if utils.RandomInt(12) < 11 {
+					continue
+				}
 			}
 			r := &requestCertificate{
 				req: &pb.PublicCertRequest{

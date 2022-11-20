@@ -9,7 +9,6 @@ require (
 	golang.conradwood.net/apis/certmanager v0.0.0-00010101000000-000000000000
 	golang.conradwood.net/apis/common v1.1.1861
 	golang.conradwood.net/apis/h2gproxy v1.1.1746
-	golang.conradwood.net/go-easyops v0.1.14079
 	golang.org/x/net v0.0.0-20220921203646-d300de134e69
 	google.golang.org/grpc v1.50.1
 )
@@ -36,6 +35,7 @@ require (
 	golang.conradwood.net/apis/objectstore v1.1.1861 // indirect
 	golang.conradwood.net/apis/registry v1.1.1861 // indirect
 	golang.conradwood.net/apis/rpcinterceptor v1.1.1861 // indirect
+	golang.conradwood.net/go-easyops v0.1.14174 // indirect
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
 	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.3.7 // indirect
