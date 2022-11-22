@@ -49,6 +49,7 @@ message CertInfo {
   string Hostname = 1;
   uint32 Created = 2;
   uint32 Expiry = 3;
+  uint32 LastRenewed = 4;
 }
 
 message CertNameList {
