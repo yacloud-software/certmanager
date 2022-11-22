@@ -146,9 +146,10 @@ func (e *CertServer) ListPublicCertificates(ctx context.Context, req *common.Voi
 	res := &pb.CertNameList{}
 	for _, db := range dbc {
 		ci := &pb.CertInfo{
-			Hostname: db.Host,
-			Created:  db.Created,
-			Expiry:   db.Expiry,
+			Hostname:    db.Host,
+			Created:     db.Created,
+			Expiry:      db.Expiry,
+			LastRenewed: db.LastAttempt,
 		}
 		res.Certificates = append(res.Certificates, ci)
 	}
