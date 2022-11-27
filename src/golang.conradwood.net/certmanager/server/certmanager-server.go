@@ -285,6 +285,9 @@ func isValid(hostname string) bool {
 	if strings.HasSuffix(hostname, "localdomain") {
 		return false
 	}
+	if strings.Contains(strings.ToLower(hostname), "proxy.conradwood") {
+		return false
+	}
 	return true
 }
 
