@@ -81,3 +81,4 @@ service CertManager {
   // serve acme URLs (permission from h2gproxy only)
   rpc ServeHTML(h2gproxy.ServeRequest) returns (h2gproxy.ServeResponse);
 }
+
