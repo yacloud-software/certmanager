@@ -172,9 +172,18 @@ func checkAccess(ctx context.Context, cert *pb.Certificate) error {
 	}
 	return nil
 }
+func rewrite_host_name(host string) string {
+	hostname := host
+	if strings.Contains(strings.ToLower(hostname), ".proxy.conradwood") {
+		hostname = "proxy.conradwood.net"
+		fmt.Printf("rewritten hostname to be exactly '%s'\n", hostname)
+	}
+	return hostname
 
+}
 func (e *CertServer) GetPublicCertificate(ctx context.Context, req *pb.PublicCertRequest) (*pb.ProcessedCertificate, error) {
 	hostname := req.Hostname
+	hostname = rewrite_host_name(hostname)
 	dbc, err := certStore.ByHost(ctx, hostname)
 	if err != nil {
 		return nil, err
@@ -221,11 +230,8 @@ func (e *CertServer) RequestPublicCertificate(ctx context.Context, req *pb.Publi
 	if !isValid(hostname) {
 		return nil, errors.InvalidArgs(ctx, "hostname invalid", "hostname \"%s\" too short, or invalid", hostname)
 	}
+	hostname = rewrite_host_name(hostname)
 	fmt.Printf("Request by %s to get certificate for %s\n", auth.Description(auth.GetUser(ctx)), hostname)
-	if strings.Contains(strings.ToLower(hostname), ".proxy.conradwood") {
-		hostname = "proxy.conradwood.net"
-		fmt.Printf("rewritten hostname to be exactly '%s'\n", hostname)
-	}
 
 	dbc, err := certStore.ByHost(ctx, hostname)
 	if err != nil {
