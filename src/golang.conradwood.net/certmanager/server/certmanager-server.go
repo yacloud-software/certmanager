@@ -222,6 +222,11 @@ func (e *CertServer) RequestPublicCertificate(ctx context.Context, req *pb.Publi
 		return nil, errors.InvalidArgs(ctx, "hostname invalid", "hostname \"%s\" too short, or invalid", hostname)
 	}
 	fmt.Printf("Request by %s to get certificate for %s\n", auth.Description(auth.GetUser(ctx)), hostname)
+	if strings.Contains(strings.ToLower(hostname), ".proxy.conradwood") {
+		hostname = "proxy.conradwood.net"
+		fmt.Printf("rewritten hostname to be exactly '%s'\n", hostname)
+	}
+
 	dbc, err := certStore.ByHost(ctx, hostname)
 	if err != nil {
 		return nil, err
@@ -283,9 +288,6 @@ func isValid(hostname string) bool {
 		return false
 	}
 	if strings.HasSuffix(hostname, "localdomain") {
-		return false
-	}
-	if strings.Contains(strings.ToLower(hostname), ".proxy.conradwood") {
 		return false
 	}
 	return true
