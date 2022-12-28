@@ -296,6 +296,15 @@ func isValid(hostname string) bool {
 	if strings.HasSuffix(hostname, "localdomain") {
 		return false
 	}
+	addrs, err := net.LookupHost(hostname)
+	if err != nil {
+		// no such host error
+		return false
+	}
+	if len(addrs) == 0 {
+		// resolved to 0 ip addresses
+		return false
+	}
 	return true
 }
 
