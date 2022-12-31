@@ -1,10 +1,10 @@
 package main
 
 import (
+    "golang.conradwood.net/go-easyops/authremote"
 	"fmt"
 	pb "golang.conradwood.net/apis/certmanager"
 	"golang.conradwood.net/go-easyops/prometheus"
-	"golang.conradwood.net/go-easyops/tokens"
 	"golang.conradwood.net/go-easyops/utils"
 	"sort"
 	"time"
@@ -30,7 +30,7 @@ func init() {
 
 func refresher() {
 	for {
-		ctx := tokens.ContextWithToken()
+		ctx := authremote.Context()
 		certs, err := certStore.All(ctx)
 		if err != nil {
 			fmt.Printf("[refresher] failed to get certs from db:%s\n", err)
