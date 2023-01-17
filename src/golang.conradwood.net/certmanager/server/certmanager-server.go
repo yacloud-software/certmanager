@@ -34,6 +34,7 @@ var (
 	legoClient            *lego.Client
 	certStore             *db.DBCertificate
 	authStore             *db.DBStoreAuth
+	allow_all             = flag.Bool("allow_all", false, "if true disable access control and always allow")
 	reqChannel            = make(chan *requestCertificate, 50)
 	psql                  *sql.DB
 )
@@ -157,6 +158,9 @@ func (e *CertServer) ListPublicCertificates(ctx context.Context, req *common.Voi
 }
 
 func checkAccess(ctx context.Context, cert *pb.Certificate) error {
+	if *allow_all {
+		return nil
+	}
 	service := auth.GetService(ctx)
 	if service != nil && service.ID == *cert_retrieve_service {
 		return nil
