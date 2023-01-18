@@ -180,7 +180,7 @@ func rewrite_host_name(host string) string {
 	hostname := host
 	if strings.Contains(strings.ToLower(hostname), ".proxy.conradwood") {
 		hostname = "proxy.conradwood.net"
-		fmt.Printf("rewritten hostname to be exactly '%s'\n", hostname)
+		fmt.Printf("rewritten hostname %s to be exactly '%s'\n", host, hostname)
 	}
 	return hostname
 

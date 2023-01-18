@@ -103,6 +103,7 @@ func (d *DBProvider) Present(domain, token, keyAuth string) error {
 }
 
 type requestCertificate struct {
+	cert      *pb.Certificate // existing/old/previous certificate (might be nil)
 	req       *pb.PublicCertRequest
 	serviceid string
 	userid    string

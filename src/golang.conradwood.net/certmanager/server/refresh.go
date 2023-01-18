@@ -1,9 +1,9 @@
 package main
 
 import (
-    "golang.conradwood.net/go-easyops/authremote"
 	"fmt"
 	pb "golang.conradwood.net/apis/certmanager"
+	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/prometheus"
 	"golang.conradwood.net/go-easyops/utils"
 	"sort"
@@ -42,6 +42,7 @@ func refresher() {
 		})
 		cutoff := time.Now().Add(time.Duration(minDays*24) * time.Hour)
 		dorand := time.Now().Add(time.Duration(minDays*12) * time.Hour)
+		var to_be_deleted_certs []*requestCertificate
 		for _, c := range certs {
 			if *debug {
 				fmt.Printf("Certificate %s: Expiry: %s, LastAttempt: %s\n",
@@ -67,6 +68,7 @@ func refresher() {
 				}
 			}
 			r := &requestCertificate{
+				cert: c,
 				req: &pb.PublicCertRequest{
 					Hostname:   c.Host,
 					VerifyType: pb.VerifyType_HTTP,
@@ -74,8 +76,23 @@ func refresher() {
 				serviceid: c.CreatorService,
 				userid:    c.CreatorUser,
 			}
-			reqChannel <- r
+			if t.Before(time.Now()) && !isValid(c.Host) {
+				to_be_deleted_certs = append(to_be_deleted_certs, r)
+			} else {
+				reqChannel <- r
+			}
+		}
 
+		for _, req := range to_be_deleted_certs {
+			cert := req.cert
+			if cert == nil {
+				continue
+			}
+			fmt.Printf("Deleting %d (%s)\n", cert.ID, cert.Host)
+			err = certStore.DeleteByID(ctx, cert.ID)
+			if err != nil {
+				fmt.Printf("Failed to delete %d (%s): %s\n", cert.ID, cert.Host, err)
+			}
 		}
 		time.Sleep(time.Duration(4) * time.Hour)
 	}
