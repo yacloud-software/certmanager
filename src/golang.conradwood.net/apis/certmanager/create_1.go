@@ -1,8 +1,15 @@
 // client create: CertManagerClient
+/*
+  Created by /home/cnw/devel/go/go-tools/src/golang.conradwood.net/gotools/protoc-gen-cnw/protoc-gen-cnw.go
+*/
+
 /* geninfo:
    filename  : protos/golang.conradwood.net/apis/certmanager/certmanager.proto
    gopackage : golang.conradwood.net/apis/certmanager
    importname: ai_0
+   clientfunc: GetCertManager
+   serverfunc: NewCertManager
+   lookupfunc: CertManagerLookupID
    varname   : client_CertManagerClient_0
    clientname: CertManagerClient
    servername: CertManagerServer
@@ -33,8 +40,9 @@ func GetCertManagerClient() CertManagerClient {
        return client_CertManagerClient_0
     }
 
-    client_CertManagerClient_0 = NewCertManagerClient(client.Connect("certmanager.CertManager"))
+    client_CertManagerClient_0 = NewCertManagerClient(client.Connect(CertManagerLookupID()))
     lock_CertManagerClient_0.Unlock()
     return client_CertManagerClient_0
 }
 
+func CertManagerLookupID() string { return "certmanager.CertManager" } // returns the ID suitable for lookup in the registry. treat as opaque, subject to change.
