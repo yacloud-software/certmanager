@@ -1,6 +1,6 @@
 // client create: CertManagerClient
 /*
-  Created by /srv/home/cnw/devel/go/go-tools/src/golang.conradwood.net/gotools/protoc-gen-cnw/protoc-gen-cnw.go
+  Created by /home/cnw/devel/go/yatools/src/golang.yacloud.eu/yatools/protoc-gen-cnw/protoc-gen-cnw.go
 */
 
 /* geninfo:
@@ -13,7 +13,7 @@
    varname   : client_CertManagerClient_0
    clientname: CertManagerClient
    servername: CertManagerServer
-   gscvname  : certmanager.CertManager
+   gsvcname  : certmanager.CertManager
    lockname  : lock_CertManagerClient_0
    activename: active_CertManagerClient_0
 */
@@ -46,3 +46,7 @@ func GetCertManagerClient() CertManagerClient {
 }
 
 func CertManagerLookupID() string { return "certmanager.CertManager" } // returns the ID suitable for lookup in the registry. treat as opaque, subject to change.
+
+func init() {
+   client.RegisterDependency("certmanager.CertManager")
+}
