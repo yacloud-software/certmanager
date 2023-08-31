@@ -14,6 +14,9 @@ message StoreAuth {
   string KeyAuth = 4; // acme response
   uint32 Created = 5; // when was this created
 }
+message LocalCertificateRequest {
+  string Subject=1;
+}
 
 // database
 message Certificate {
@@ -81,4 +84,6 @@ service CertManager {
   rpc GetPublicCertificate(PublicCertRequest) returns (ProcessedCertificate);
   // serve acme URLs (permission from h2gproxy only)
   rpc ServeHTML(h2gproxy.ServeRequest) returns (h2gproxy.ServeResponse);
+  // create a local certificate
+  rpc LocalCertificate(LocalCertificateRequest) returns (Certificate);
 }
