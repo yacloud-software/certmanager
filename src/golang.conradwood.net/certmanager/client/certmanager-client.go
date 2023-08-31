@@ -20,6 +20,7 @@ var (
 	request    = flag.Bool("request", false, "request new certificate")
 	reqlist    = flag.Bool("list", false, "request list of certs")
 	save_pem   = flag.String("save_pem", "", "pem `directory` to save certificate to")
+	local      = flag.Bool("local", false, "if true, generate locally signed certificate")
 )
 
 func main() {
@@ -34,7 +35,7 @@ func main() {
 		list()
 	}
 	if *request {
-		requestCert(*hostname)
+		utils.Bail("failed to request cert", requestCert(*hostname))
 	}
 	if *get {
 		doget(*hostname)
@@ -123,10 +124,40 @@ func list() {
 	fmt.Printf(t.ToPrettyString())
 }
 
-func requestCert(host string) {
+func requestCert(host string) error {
+	if *local {
+		return requestLocalCert(host)
+	}
 	ctx := authremote.Context()
 	pcr := &pb.PublicCertRequest{Hostname: host, VerifyType: pb.VerifyType_DNS}
 	response, err := certClient.RequestPublicCertificate(ctx, pcr)
-	utils.Bail("Failed to ping server", err)
+	if err != nil {
+		return err
+	}
 	fmt.Printf("Response to ping: %v\n", response)
+	return nil
+}
+
+func requestLocalCert(host string) error {
+	os.MkdirAll("/tmp/certs/", 0777)
+	ctx := authremote.Context()
+	req := &pb.LocalCertificateRequest{Subject: host}
+	response, err := certClient.LocalCertificate(ctx, req)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Response: %#v\n", response)
+	saveFile("/tmp/certs/certificate.pem", response.PemCertificate)
+	saveFile("/tmp/certs/key.pem", response.PemPrivateKey)
+	saveFile("/tmp/certs/cert-and-key.pem", response.PemCertificate+"\n"+response.PemPrivateKey)
+	saveFile("/tmp/certs/ca.pem", response.PemCA)
+	return nil
+}
+func saveFile(filename, content string) {
+	err := utils.WriteFile(filename, []byte(content))
+	if err != nil {
+		fmt.Printf("I/O error: %s\n", err)
+		return
+	}
+	fmt.Printf("Saved \"%s\"\n", filename)
 }

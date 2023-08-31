@@ -30,13 +30,15 @@ import (
 var (
 	//	cert_retrieve_service = flag.String("cert_allowed_service", "37", "service id of the service serving the certs (usually h2gproxy)")
 	debug      = flag.Bool("debug", false, "debug mode")
+	startlego  = flag.Bool("startlego", true, "if false do not start lego and do not support creating public certificates")
 	port       = flag.Int("port", 4100, "The grpc server port")
 	legoClient *lego.Client
 	certStore  *db.DBCertificate
 	authStore  *db.DBStoreAuth
 	allow_all  = flag.Bool("allow_all", false, "if true disable access control and always allow")
 	reqChannel = make(chan *requestCertificate, 50)
-	psql       *sql.DB
+
+	psql *sql.DB
 )
 
 type CertServer struct {
@@ -48,28 +50,30 @@ func main() {
 	fmt.Printf("Starting CertManagerServer...\n")
 	psql, err = sql.Open()
 	utils.Bail("failed to open database", err)
-	certStore = db.NewDBCertificate(psql)
-	authStore = db.NewDBStoreAuth(psql)
-	go requestWorker()
-	go func() {
-		// lego client needs some undetermined amount to initialise
-		// it's useful to delay a bit so there is some chance to hit
-		// at the first instance
-		time.Sleep(time.Duration(5) * time.Second)
-		refresher()
-	}()
-	go func() {
-		for {
-			legoClient, err = getLego()
-			if err != nil {
-				fmt.Printf("failed to get lego. will retry\n")
-			} else {
-				fmt.Printf("Lego client initialised\n")
-				break
-			}
+	certStore = db.DefaultDBCertificate()
+	authStore = db.DefaultDBStoreAuth()
+	if *startlego {
+		go requestWorker()
+		go func() {
+			// lego client needs some undetermined amount to initialise
+			// it's useful to delay a bit so there is some chance to hit
+			// at the first instance
 			time.Sleep(time.Duration(5) * time.Second)
-		}
-	}()
+			refresher()
+		}()
+		go func() {
+			for {
+				legoClient, err = getLego()
+				if err != nil {
+					fmt.Printf("failed to get lego. will retry\n")
+				} else {
+					fmt.Printf("Lego client initialised\n")
+					break
+				}
+				time.Sleep(time.Duration(5) * time.Second)
+			}
+		}()
+	}
 
 	sd := server.NewServerDef()
 	sd.Port = *port
