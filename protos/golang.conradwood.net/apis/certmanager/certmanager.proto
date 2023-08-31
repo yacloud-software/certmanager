@@ -70,7 +70,7 @@ message ImportRequest {
   string PemPrivateKey = 3;  // the pem encoded private key
 }
 
-// comment: certmanager description
+// The CertManager manages certificates, public ones and local ones
 service CertManager {
   // import a public certificate
   rpc ImportPublicCertificate(ImportRequest) returns (Certificate);
@@ -87,5 +87,5 @@ service CertManager {
   // serve acme URLs (permission from h2gproxy only)
   rpc ServeHTML(h2gproxy.ServeRequest) returns (h2gproxy.ServeResponse);
   // create a local certificate
-  rpc LocalCertificate(LocalCertificateRequest) returns (Certificate);
+  rpc GetLocalCertificate(LocalCertificateRequest) returns (Certificate);
 }
