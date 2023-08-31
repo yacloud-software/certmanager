@@ -31,6 +31,8 @@ message Certificate {
   string CreatorService = 9; // service which requested it
   uint32 LastAttempt = 10;   // last attempt to retrieve one
   string LastError=11; // last error, if any
+  bool IsLocalCA=12; // true if this certificate is a locally generated one
+  bool IsLocalCert=13; // true if this certificate is is signed by a local CA
 }
 // derived certificate, pre-processed
 message ProcessedCertificate {
