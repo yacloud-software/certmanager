@@ -92,22 +92,25 @@ func gen_new_cert(ca *pb.Certificate, subject string, requestor_email string) (*
 		return nil, fmt.Errorf("failure parsing ca cert: %w", err)
 	}
 	cert := &x509.Certificate{
-		EmailAddresses: []string{requestor_email},
-		DNSNames:       []string{subject},
-		SerialNumber:   big.NewInt(2019),
+		EmailAddresses:      []string{requestor_email},
+		DNSNames:            []string{subject},
+		PermittedDNSDomains: []string{subject},
+		SerialNumber:        big.NewInt(2019),
 		Subject: pkix.Name{
-			Organization:  []string{subject},
-			Country:       []string{"UK"},
-			Province:      []string{"Greater London"},
-			Locality:      []string{"Hammersmith"},
-			StreetAddress: []string{"Lyric Square"},
-			PostalCode:    []string{"1"},
+			CommonName:         subject,
+			Organization:       []string{subject},
+			OrganizationalUnit: []string{subject},
+			Country:            []string{"UK"},
+			Province:           []string{"Greater London"},
+			Locality:           []string{"Hammersmith"},
+			StreetAddress:      []string{"Lyric Square"},
+			PostalCode:         []string{"1"},
 		},
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().AddDate(0, 3, 0), // 3 months
 		IsCA:                  false,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
-		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageContentCommitment | x509.KeyUsageDataEncipherment,
 		BasicConstraintsValid: true,
 	}
 	certPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
@@ -147,14 +150,16 @@ func create_ca(subject string) (*pb.Certificate, error) {
 	ca := &x509.Certificate{
 		DNSNames:              []string{subject},
 		IssuingCertificateURL: []string{"https://" + subject + "/ca.html"},
-		SerialNumber:          big.NewInt(2019),
+		SerialNumber:          big.NewInt(1),
 		Subject: pkix.Name{
-			Organization:  []string{subject},
-			Country:       []string{"UK"},
-			Province:      []string{"Greater London"},
-			Locality:      []string{"Hammersmith"},
-			StreetAddress: []string{"Lyric Square"},
-			PostalCode:    []string{"1"},
+			CommonName:         subject,
+			Organization:       []string{subject},
+			OrganizationalUnit: []string{subject},
+			Country:            []string{"UK"},
+			Province:           []string{"Greater London"},
+			Locality:           []string{"Hammersmith"},
+			StreetAddress:      []string{"Lyric Square"},
+			PostalCode:         []string{"1"},
 		},
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().AddDate(10, 0, 0), // 10 years
