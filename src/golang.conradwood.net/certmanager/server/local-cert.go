@@ -22,7 +22,7 @@ var (
 	default_ca_subject = flag.String("default_ca", "ca.conradwood.net", "ca subject")
 )
 
-func (e *CertServer) LocalCertificate(ctx context.Context, req *pb.LocalCertificateRequest) (*pb.Certificate, error) {
+func (e *CertServer) GetLocalCertificate(ctx context.Context, req *pb.LocalCertificateRequest) (*pb.Certificate, error) {
 	u := auth.GetUser(ctx)
 	if u == nil {
 		return nil, errors.Unauthenticated(ctx, "please log in")

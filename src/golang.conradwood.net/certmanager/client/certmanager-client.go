@@ -142,7 +142,7 @@ func requestLocalCert(host string) error {
 	os.MkdirAll("/tmp/certs/", 0777)
 	ctx := authremote.Context()
 	req := &pb.LocalCertificateRequest{Subject: host}
-	response, err := certClient.LocalCertificate(ctx, req)
+	response, err := certClient.GetLocalCertificate(ctx, req)
 	if err != nil {
 		return err
 	}
