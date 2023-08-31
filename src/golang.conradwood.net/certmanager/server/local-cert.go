@@ -48,6 +48,7 @@ func gen_new_cert(ca *pb.Certificate, subject string) (*pb.Certificate, error) {
 		return nil, fmt.Errorf("failure parsing ca cert: %w", err)
 	}
 	cert := &x509.Certificate{
+		DNSNames:     []string{subject},
 		SerialNumber: big.NewInt(2019),
 		Subject: pkix.Name{
 			Organization:  []string{subject},
@@ -59,7 +60,7 @@ func gen_new_cert(ca *pb.Certificate, subject string) (*pb.Certificate, error) {
 		},
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().AddDate(0, 3, 0), // 3 months
-		IsCA:                  true,
+		IsCA:                  false,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
 		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
 		BasicConstraintsValid: true,
@@ -98,6 +99,7 @@ func gen_new_cert(ca *pb.Certificate, subject string) (*pb.Certificate, error) {
 func create_ca(subject string) (*pb.Certificate, error) {
 	fmt.Printf("Creating ca for \"%s\"\n", subject)
 	ca := &x509.Certificate{
+		DNSNames:     []string{subject},
 		SerialNumber: big.NewInt(2019),
 		Subject: pkix.Name{
 			Organization:  []string{subject},
