@@ -146,7 +146,7 @@ func requestLocalCert(host string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Response: %#v\n", response)
+	fmt.Printf("Server responded with Certificate #%d\n", response.ID)
 	saveFile("/tmp/certs/certificate.pem", response.PemCertificate)
 	saveFile("/tmp/certs/key.pem", response.PemPrivateKey)
 	saveFile("/tmp/certs/cert-and-key.pem", response.PemCertificate+"\n"+response.PemPrivateKey)

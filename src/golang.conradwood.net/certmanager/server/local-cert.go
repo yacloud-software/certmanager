@@ -12,6 +12,8 @@ import (
 	"flag"
 	"fmt"
 	pb "golang.conradwood.net/apis/certmanager"
+	"golang.conradwood.net/go-easyops/auth"
+	"golang.conradwood.net/go-easyops/errors"
 	"math/big"
 	"time"
 )
@@ -21,35 +23,78 @@ var (
 )
 
 func (e *CertServer) LocalCertificate(ctx context.Context, req *pb.LocalCertificateRequest) (*pb.Certificate, error) {
+	u := auth.GetUser(ctx)
+	if u == nil {
+		return nil, errors.Unauthenticated(ctx, "please log in")
+	}
+	certs, err := certStore.ByHost(ctx, req.Subject)
+	if err != nil {
+		return nil, err
+	}
+	exp := time.Now().Unix()
+	for _, c := range certs {
+		if !c.IsLocalCert {
+			continue
+		}
+		if c.IsLocalCA {
+			continue
+		}
+		if int64(c.Expiry) <= exp {
+			continue
+		}
+		return c, nil
+	}
+
 	ca, err := get_ca(*default_ca_subject)
 	if err != nil {
 		return nil, err
 	}
-	cert, err := gen_new_cert(ca, req.Subject)
+	cert, err := gen_new_cert(ca, req.Subject, u.Email)
 	if err != nil {
 		return nil, err
 	}
+	certStore.Save(ctx, cert)
 	return cert, nil
 }
 
 // get ca certificate or create new one
 func get_ca(subject string) (*pb.Certificate, error) {
-	ca, err := create_ca(subject)
+	certs, err := certStore.ByHost(context.Background(), subject)
 	if err != nil {
 		return nil, err
+	}
+	var ca *pb.Certificate
+	for _, c := range certs {
+		if !c.IsLocalCA {
+			continue
+		}
+		// TODO: check time.After (expiry)
+		ca = c
+		break
+	}
+	if ca != nil {
+		return ca, nil
+	}
+	ca, err = create_ca(subject)
+	if err != nil {
+		return nil, err
+	}
+	if ca.ID == 0 {
+		certStore.Save(context.Background(), ca)
 	}
 	return ca, nil
 }
 
-func gen_new_cert(ca *pb.Certificate, subject string) (*pb.Certificate, error) {
+func gen_new_cert(ca *pb.Certificate, subject string, requestor_email string) (*pb.Certificate, error) {
 	fmt.Printf("Creating cert for \"%s\"\n", subject)
 	cacert, err := parseCert(ca)
 	if err != nil {
 		return nil, fmt.Errorf("failure parsing ca cert: %w", err)
 	}
 	cert := &x509.Certificate{
-		DNSNames:     []string{subject},
-		SerialNumber: big.NewInt(2019),
+		EmailAddresses: []string{requestor_email},
+		DNSNames:       []string{subject},
+		SerialNumber:   big.NewInt(2019),
 		Subject: pkix.Name{
 			Organization:  []string{subject},
 			Country:       []string{"UK"},
@@ -91,6 +136,7 @@ func gen_new_cert(ca *pb.Certificate, subject string) (*pb.Certificate, error) {
 		PemCA:          ca.PemCA,
 		Created:        uint32(cert.NotBefore.Unix()),
 		Expiry:         uint32(cert.NotAfter.Unix()),
+		IsLocalCert:    true,
 	}
 	return res, nil
 }
@@ -99,8 +145,9 @@ func gen_new_cert(ca *pb.Certificate, subject string) (*pb.Certificate, error) {
 func create_ca(subject string) (*pb.Certificate, error) {
 	fmt.Printf("Creating ca for \"%s\"\n", subject)
 	ca := &x509.Certificate{
-		DNSNames:     []string{subject},
-		SerialNumber: big.NewInt(2019),
+		DNSNames:              []string{subject},
+		IssuingCertificateURL: []string{"https://" + subject + "/ca.html"},
+		SerialNumber:          big.NewInt(2019),
 		Subject: pkix.Name{
 			Organization:  []string{subject},
 			Country:       []string{"UK"},
@@ -142,6 +189,8 @@ func create_ca(subject string) (*pb.Certificate, error) {
 		PemCA:          caPEM.String(),
 		Created:        uint32(ca.NotBefore.Unix()),
 		Expiry:         uint32(ca.NotAfter.Unix()),
+		IsLocalCA:      true,
+		IsLocalCert:    true,
 	}
 	return res, nil
 }

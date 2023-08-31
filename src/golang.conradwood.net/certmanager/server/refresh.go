@@ -37,6 +37,7 @@ func refresher() {
 			time.Sleep(time.Duration(5) * time.Minute)
 			continue
 		}
+		certs = filter_public_only(certs)
 		sort.Slice(certs, func(i, j int) bool {
 			return certs[i].LastAttempt < certs[j].LastAttempt
 		})

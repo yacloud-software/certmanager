@@ -19,10 +19,10 @@ Main Table:
  CREATE TABLE storeauth (id integer primary key default nextval('storeauth_seq'),domain text not null  ,token text not null  ,keyauth text not null  ,created integer not null  );
 
 Alter statements:
-ALTER TABLE storeauth ADD COLUMN domain text not null default '';
-ALTER TABLE storeauth ADD COLUMN token text not null default '';
-ALTER TABLE storeauth ADD COLUMN keyauth text not null default '';
-ALTER TABLE storeauth ADD COLUMN created integer not null default 0;
+ALTER TABLE storeauth ADD COLUMN IF NOT EXISTS domain text not null default '';
+ALTER TABLE storeauth ADD COLUMN IF NOT EXISTS token text not null default '';
+ALTER TABLE storeauth ADD COLUMN IF NOT EXISTS keyauth text not null default '';
+ALTER TABLE storeauth ADD COLUMN IF NOT EXISTS created integer not null default 0;
 
 
 Archive Table: (structs can be moved from main to archive using Archive() function)
@@ -363,14 +363,34 @@ func (a *DBStoreAuth) FromRows(ctx context.Context, rows *gosql.Rows) ([]*savepb
 func (a *DBStoreAuth) CreateTable(ctx context.Context) error {
 	csql := []string{
 		`create sequence if not exists ` + a.SQLTablename + `_seq;`,
-		`CREATE TABLE if not exists ` + a.SQLTablename + ` (id integer primary key default nextval('` + a.SQLTablename + `_seq'),domain text not null  ,token text not null  ,keyauth text not null  ,created integer not null  );`,
-		`CREATE TABLE if not exists ` + a.SQLTablename + `_archive (id integer primary key default nextval('` + a.SQLTablename + `_seq'),domain text not null  ,token text not null  ,keyauth text not null  ,created integer not null  );`,
+		`CREATE TABLE if not exists ` + a.SQLTablename + ` (id integer primary key default nextval('` + a.SQLTablename + `_seq'),domain text not null ,token text not null ,keyauth text not null ,created integer not null );`,
+		`CREATE TABLE if not exists ` + a.SQLTablename + `_archive (id integer primary key default nextval('` + a.SQLTablename + `_seq'),domain text not null ,token text not null ,keyauth text not null ,created integer not null );`,
+		`ALTER TABLE storeauth ADD COLUMN IF NOT EXISTS domain text not null default '';`,
+		`ALTER TABLE storeauth ADD COLUMN IF NOT EXISTS token text not null default '';`,
+		`ALTER TABLE storeauth ADD COLUMN IF NOT EXISTS keyauth text not null default '';`,
+		`ALTER TABLE storeauth ADD COLUMN IF NOT EXISTS created integer not null default 0;`,
+
+		`ALTER TABLE storeauth_archive ADD COLUMN IF NOT EXISTS domain text not null default '';`,
+		`ALTER TABLE storeauth_archive ADD COLUMN IF NOT EXISTS token text not null default '';`,
+		`ALTER TABLE storeauth_archive ADD COLUMN IF NOT EXISTS keyauth text not null default '';`,
+		`ALTER TABLE storeauth_archive ADD COLUMN IF NOT EXISTS created integer not null default 0;`,
 	}
 	for i, c := range csql {
 		_, e := a.DB.ExecContext(ctx, fmt.Sprintf("create_"+a.SQLTablename+"_%d", i), c)
 		if e != nil {
 			return e
 		}
+	}
+
+	// these are optional, expected to fail
+	csql = []string{
+		// Indices:
+
+		// Foreign keys:
+
+	}
+	for i, c := range csql {
+		a.DB.ExecContextQuiet(ctx, fmt.Sprintf("create_"+a.SQLTablename+"_%d", i), c)
 	}
 	return nil
 }

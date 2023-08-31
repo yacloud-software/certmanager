@@ -114,6 +114,7 @@ func (e *CertServer) ImportPublicCertificate(ctx context.Context, req *pb.Import
 	if err != nil {
 		return nil, err
 	}
+	dbcl = filter_public_only(dbcl)
 	if len(dbcl) != 0 {
 		return nil, errors.Error(ctx, codes.AlreadyExists, "certificate already exists", "certificate for host %s already exists", hostname)
 	}
@@ -148,8 +149,10 @@ func (e *CertServer) ListPublicCertificates(ctx context.Context, req *common.Voi
 	if err != nil {
 		return nil, err
 	}
+	dbc = filter_public_only(dbc)
 	res := &pb.CertNameList{}
 	for _, db := range dbc {
+
 		ci := &pb.CertInfo{
 			Hostname:    db.Host,
 			Created:     db.Created,
@@ -197,10 +200,12 @@ func (e *CertServer) GetPublicCertificate(ctx context.Context, req *pb.PublicCer
 	if err != nil {
 		return nil, err
 	}
+	dbc = filter_public_only(dbc)
 	if len(dbc) == 0 {
 		return nil, errors.NotFound(ctx, "no certificate for \"%s\"\n", hostname)
 	}
 	cert := dbc[0]
+
 	err = checkAccess(ctx, cert)
 	if err != nil {
 		// we return "notfound" so not to disclose that a cert exists but user has no access to it
@@ -246,6 +251,7 @@ func (e *CertServer) RequestPublicCertificate(ctx context.Context, req *pb.Publi
 	if err != nil {
 		return nil, err
 	}
+	dbc = filter_public_only(dbc)
 	mostRecent := uint32(0)
 	for _, db := range dbc {
 		if mostRecent == 0 || db.Expiry < mostRecent {

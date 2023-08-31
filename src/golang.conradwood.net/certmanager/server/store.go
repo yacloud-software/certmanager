@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	cm "golang.conradwood.net/apis/certmanager"
+	pb "golang.conradwood.net/apis/certmanager"
 	"golang.conradwood.net/go-easyops/errors"
 	"sort"
 	"sync"
@@ -73,4 +74,15 @@ func clearStore(ctx context.Context, hostname string) error {
 	s := "delete from " + authStore.Tablename() + " where domain = $1"
 	_, err := psql.ExecContext(ctx, "clearstore", s, hostname)
 	return err
+}
+
+func filter_public_only(certs []*pb.Certificate) []*pb.Certificate {
+	var res []*pb.Certificate
+	for _, c := range certs {
+		if c.IsLocalCA || c.IsLocalCert {
+			continue
+		}
+		res = append(res, c)
+	}
+	return res
 }
