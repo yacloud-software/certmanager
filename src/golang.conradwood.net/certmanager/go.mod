@@ -7,9 +7,9 @@ replace golang.conradwood.net/apis/certmanager => ../../golang.conradwood.net/ap
 require (
 	github.com/go-acme/lego/v3 v3.9.0
 	golang.conradwood.net/apis/certmanager v0.0.0-00010101000000-000000000000
-	golang.conradwood.net/apis/common v1.1.2495
+	golang.conradwood.net/apis/common v1.1.2503
 	golang.conradwood.net/apis/h2gproxy v1.1.2296
-	golang.conradwood.net/go-easyops v0.1.19134
+	golang.conradwood.net/go-easyops v0.1.19209
 	google.golang.org/grpc v1.57.0
 )
 
@@ -26,16 +26,16 @@ require (
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.11.1 // indirect
-	golang.conradwood.net/apis/auth v1.1.2495 // indirect
-	golang.conradwood.net/apis/autodeployer v1.1.2495 // indirect
-	golang.conradwood.net/apis/commondeploy v1.1.2495 // indirect
-	golang.conradwood.net/apis/deploymonkey v1.1.2495 // indirect
+	golang.conradwood.net/apis/auth v1.1.2503 // indirect
+	golang.conradwood.net/apis/autodeployer v1.1.2503 // indirect
+	golang.conradwood.net/apis/commondeploy v1.1.2503 // indirect
+	golang.conradwood.net/apis/deploymonkey v1.1.2503 // indirect
 	golang.conradwood.net/apis/echoservice v1.1.2495 // indirect
 	golang.conradwood.net/apis/errorlogger v1.1.2495 // indirect
-	golang.conradwood.net/apis/framework v1.1.2495 // indirect
-	golang.conradwood.net/apis/goeasyops v1.1.2495 // indirect
-	golang.conradwood.net/apis/objectstore v1.1.2495 // indirect
-	golang.conradwood.net/apis/registry v1.1.2495 // indirect
+	golang.conradwood.net/apis/framework v1.1.2503 // indirect
+	golang.conradwood.net/apis/goeasyops v1.1.2503 // indirect
+	golang.conradwood.net/apis/objectstore v1.1.2503 // indirect
+	golang.conradwood.net/apis/registry v1.1.2503 // indirect
 	golang.conradwood.net/apis/rpcinterceptor v1.1.2495 // indirect
 	golang.org/x/crypto v0.12.0 // indirect
 	golang.org/x/mod v0.10.0 // indirect
@@ -43,7 +43,7 @@ require (
 	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/text v0.12.0 // indirect
 	golang.org/x/tools v0.9.3 // indirect
-	golang.yacloud.eu/apis/session v1.1.2495 // indirect
+	golang.yacloud.eu/apis/session v1.1.2503 // indirect
 	golang.yacloud.eu/apis/urlcacher v1.1.2495 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230525234030-28d5490b6b19 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
