@@ -307,8 +307,8 @@ golang.conradwood.net/apis/registry v1.1.2503 h1:jMHHCMhp46AgN45C88X0hKVlTIYVzTP
 golang.conradwood.net/apis/registry v1.1.2503/go.mod h1:pnR5o+8d4YoubdlhRkLjVs9qOZBd8orpTuF8WrUGkmI=
 golang.conradwood.net/apis/rpcinterceptor v1.1.2495 h1:XDRtCEz7qm+ioYm1yo2hQjUfNyCoJy3XZW8tDP9aKX4=
 golang.conradwood.net/apis/rpcinterceptor v1.1.2495/go.mod h1:b70dVRDjNyMcJW73kMLnu4Bl7w5F04WC/4QmgeeXuCI=
-golang.conradwood.net/go-easyops v0.1.19396 h1:wrwsD61qf7bJw6KgDCETeXTg8/rcvqsdBsJ9V0N5uIU=
-golang.conradwood.net/go-easyops v0.1.19396/go.mod h1:RC7fYrRFMXBQWlCSx3eaLTwAKA89p7LcP0fJz7wbv+4=
+golang.conradwood.net/go-easyops v0.1.19481 h1:kS0YMsg1sIdon0tLlk0ftvhkrLqRcws3c4YoVoUC2kQ=
+golang.conradwood.net/go-easyops v0.1.19481/go.mod h1:RC7fYrRFMXBQWlCSx3eaLTwAKA89p7LcP0fJz7wbv+4=
 golang.org/x/crypto v0.0.0-20180621125126-a49355c7e3f8/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
 golang.org/x/crypto v0.0.0-20180904163835-0709b304e793/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
