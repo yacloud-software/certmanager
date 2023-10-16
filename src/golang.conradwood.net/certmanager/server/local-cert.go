@@ -23,6 +23,9 @@ var (
 )
 
 func (e *CertServer) GetLocalCertificate(ctx context.Context, req *pb.LocalCertificateRequest) (*pb.Certificate, error) {
+	if req.Subject == "" {
+		return nil, errors.InvalidArgs(ctx, "no subject provided", "no subject provided")
+	}
 	u := auth.GetUser(ctx)
 	if u == nil {
 		return nil, errors.Unauthenticated(ctx, "please log in")
@@ -33,6 +36,9 @@ func (e *CertServer) GetLocalCertificate(ctx context.Context, req *pb.LocalCerti
 	}
 	exp := time.Now().Unix()
 	for _, c := range certs {
+		if c.Host != req.Subject {
+			continue
+		}
 		if !c.IsLocalCert {
 			continue
 		}
@@ -41,6 +47,10 @@ func (e *CertServer) GetLocalCertificate(ctx context.Context, req *pb.LocalCerti
 		}
 		if int64(c.Expiry) <= exp {
 			continue
+		}
+		err := add_public_key(c)
+		if err != nil {
+			return nil, err
 		}
 		return c, nil
 	}
@@ -54,6 +64,10 @@ func (e *CertServer) GetLocalCertificate(ctx context.Context, req *pb.LocalCerti
 		return nil, err
 	}
 	certStore.Save(ctx, cert)
+	err = add_public_key(cert)
+	if err != nil {
+		return nil, err
+	}
 	return cert, nil
 }
 

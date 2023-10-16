@@ -49,4 +49,5 @@ func CertManagerLookupID() string { return "certmanager.CertManager" } // return
 
 func init() {
    client.RegisterDependency("certmanager.CertManager")
+   AddService("certmanager.CertManager")
 }

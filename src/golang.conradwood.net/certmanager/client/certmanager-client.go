@@ -8,6 +8,7 @@ import (
 	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/utils"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -19,7 +20,7 @@ var (
 	get        = flag.Bool("get", false, "get certificate")
 	request    = flag.Bool("request", false, "request new certificate")
 	reqlist    = flag.Bool("list", false, "request list of certs")
-	save_pem   = flag.String("save_pem", "", "pem `directory` to save certificate to")
+	save_pem   = flag.String("save_pem", "/tmp/certs/", "pem `directory` to save certificate to")
 	local      = flag.Bool("local", false, "if true, generate locally signed certificate")
 )
 
@@ -58,24 +59,65 @@ func doget(host string) {
 	utils.Bail("Failed to get cert", err)
 	fmt.Printf("Certificate for %s\n", host)
 	fmt.Printf("   Expires    : %s\n", utils.TimestampString(cert.Cert.Expiry))
-	save(cert)
+	save(cert.Cert)
 }
-func save(cert *pb.ProcessedCertificate) {
+func save(cert *pb.Certificate) {
 	if *save_pem == "" {
+		fmt.Printf("Not saving (missing -save_pem option)\n")
 		return
 	}
-	d := *save_pem + "/" + cert.Cert.Host
-	os.MkdirAll(d, 0777)
-	bcert := fixup(cert.Cert.PemCertificate)
-	bkey := fixup(cert.Cert.PemPrivateKey)
-	bca := fixup(cert.Cert.PemCA)
-	err := utils.WriteFile(d+"/cert-and-key.pem", []byte(bcert+bca+bkey))
-	utils.Bail("failed to save", err)
-	err = utils.WriteFile(d+"/certificate.pem", []byte(bcert+bca))
-	utils.Bail("failed to save", err)
-	err = utils.WriteFile(d+"/key.pem", []byte(bkey))
-	utils.Bail("failed to save", err)
+	if cert.Host == "" {
+		fmt.Printf("Warning - certificate has no hostname\n")
+	}
+
+	d := *save_pem + "/" + cert.Host
+	err := os.MkdirAll(d, 0777)
+	utils.Bail("failed to mkdir", err)
+	bcert := fixup(cert.PemCertificate)
+	bkey := fixup(cert.PemPrivateKey)
+	bca := fixup(cert.PemCA)
+	saveFile(d+"/cert-and-key.pem", []byte(bcert+bca+bkey))
+	saveFile(d+"/certificate.pem", []byte(bcert+bca))
+	saveFile(d+"/key.pem", []byte(bkey))
+	if cert.PemPublicKey != "" {
+		saveFile(d+"/public_key.pem", []byte(cert.PemPublicKey))
+		dns_txt := to_dns_txt("v=DKIM1; k=rsa; p=", cert.PemPublicKey)
+		saveFile(d+"/public_key.dns_txt", []byte(dns_txt))
+	}
 }
+
+// returns a bind zonefile line
+func to_dns_txt(prefix, pem string) string {
+	pem = strings.ReplaceAll(pem, "\n", "")
+	pem = strings.ReplaceAll(pem, "-----BEGIN PUBLIC KEY-----", "")
+	pem = strings.ReplaceAll(pem, "-----END PUBLIC KEY-----", "")
+	pem = strings.TrimSuffix(pem, "==")
+	pem = prefix + pem
+	pem = strings.ReplaceAll(pem, ";", "\\;")
+	pem = pem + "\n"
+	var entries []string
+	offset := 0
+	repeat := true
+	for repeat {
+		size := 255
+		if len(pem) < size+offset {
+			size = len(pem) - offset
+			repeat = false
+		}
+		e := pem[offset : offset+size]
+		entries = append(entries, e)
+		offset = offset + size
+	}
+	res := ""
+	deli := ""
+	for _, e := range entries {
+		res = res + deli + fmt.Sprintf("\"%s\"", e)
+		deli = " "
+		fmt.Printf("%03d <<"+e+">>\n", len(e))
+	}
+	return res
+}
+
 func fixup(pemthing string) string {
 	res := strings.TrimSuffix(pemthing, "\n")
 	res = strings.TrimPrefix(res, "\n")
@@ -146,20 +188,13 @@ func requestLocalCert(host string) error {
 		return err
 	}
 	fmt.Printf("Server responded with Certificate #%d\n", response.ID)
-
-	prefix := fmt.Sprintf("/tmp/certs/%s/", response.Host)
-	err = os.MkdirAll(prefix, 0777)
-	if err != nil {
-		return err
-	}
-	saveFile(prefix+"certificate.pem", response.PemCertificate)
-	saveFile(prefix+"key.pem", response.PemPrivateKey)
-	saveFile(prefix+"cert-and-key.pem", response.PemCertificate+"\n"+response.PemPrivateKey)
-	saveFile(prefix+"ca.pem", response.PemCA)
+	save(response)
 	return nil
 }
-func saveFile(filename, content string) {
-	err := utils.WriteFile(filename, []byte(content))
+func saveFile(filename string, content []byte) {
+	filename, err := filepath.Abs(filename)
+	utils.Bail("failed to make filename absolute", err)
+	err = utils.WriteFile(filename, content)
 	if err != nil {
 		fmt.Printf("I/O error: %s\n", err)
 		return
