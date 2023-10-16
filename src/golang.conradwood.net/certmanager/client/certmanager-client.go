@@ -139,7 +139,6 @@ func requestCert(host string) error {
 }
 
 func requestLocalCert(host string) error {
-	os.MkdirAll("/tmp/certs/", 0777)
 	ctx := authremote.Context()
 	req := &pb.LocalCertificateRequest{Subject: host}
 	response, err := certClient.GetLocalCertificate(ctx, req)
@@ -147,10 +146,16 @@ func requestLocalCert(host string) error {
 		return err
 	}
 	fmt.Printf("Server responded with Certificate #%d\n", response.ID)
-	saveFile("/tmp/certs/certificate.pem", response.PemCertificate)
-	saveFile("/tmp/certs/key.pem", response.PemPrivateKey)
-	saveFile("/tmp/certs/cert-and-key.pem", response.PemCertificate+"\n"+response.PemPrivateKey)
-	saveFile("/tmp/certs/ca.pem", response.PemCA)
+
+	prefix := fmt.Sprintf("/tmp/certs/%s/", response.Host)
+	err = os.MkdirAll(prefix, 0777)
+	if err != nil {
+		return err
+	}
+	saveFile(prefix+"certificate.pem", response.PemCertificate)
+	saveFile(prefix+"key.pem", response.PemPrivateKey)
+	saveFile(prefix+"cert-and-key.pem", response.PemCertificate+"\n"+response.PemPrivateKey)
+	saveFile(prefix+"ca.pem", response.PemCA)
 	return nil
 }
 func saveFile(filename, content string) {
