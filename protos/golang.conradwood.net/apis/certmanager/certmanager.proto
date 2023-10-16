@@ -33,6 +33,7 @@ message Certificate {
   string LastError=11; // last error, if any
   bool IsLocalCA=12; // true if this certificate is a locally generated one
   bool IsLocalCert=13; // true if this certificate is is signed by a local CA
+  string PemPublicKey=14; // the public key corresponding to the private key (if available)
 }
 // derived certificate, pre-processed
 message ProcessedCertificate {
