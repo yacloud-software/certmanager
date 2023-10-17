@@ -91,10 +91,10 @@ func to_dns_txt(prefix, pem string) string {
 	pem = strings.ReplaceAll(pem, "\n", "")
 	pem = strings.ReplaceAll(pem, "-----BEGIN PUBLIC KEY-----", "")
 	pem = strings.ReplaceAll(pem, "-----END PUBLIC KEY-----", "")
-	pem = strings.TrimSuffix(pem, "==")
+	// pem = strings.TrimSuffix(pem, "==") // need that!
 	pem = prefix + pem
 	pem = strings.ReplaceAll(pem, ";", "\\;")
-	pem = pem + "\n"
+	//pem = pem + "\n"
 	var entries []string
 	offset := 0
 	repeat := true
