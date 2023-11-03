@@ -76,6 +76,7 @@ func save(cert *pb.Certificate) {
 	bcert := fixup(cert.PemCertificate)
 	bkey := fixup(cert.PemPrivateKey)
 	bca := fixup(cert.PemCA)
+	saveFile(d+"/ca.pem", []byte(bca))
 	saveFile(d+"/cert-and-key.pem", []byte(bcert+bca+bkey))
 	saveFile(d+"/certificate.pem", []byte(bcert+bca))
 	saveFile(d+"/key.pem", []byte(bkey))
@@ -113,7 +114,7 @@ func to_dns_txt(prefix, pem string) string {
 	for _, e := range entries {
 		res = res + deli + fmt.Sprintf("\"%s\"", e)
 		deli = " "
-		fmt.Printf("%03d <<"+e+">>\n", len(e))
+		//fmt.Printf("%03d <<"+e+">>\n", len(e))
 	}
 	return res
 }
