@@ -200,7 +200,9 @@ func (e *CertServer) GetPublicCertificate(ctx context.Context, req *pb.PublicCer
 	if err != nil {
 		return nil, err
 	}
-	dbc = filter_public_only(dbc)
+	if !host_allows_local(hostname) {
+		dbc = filter_public_only(dbc)
+	}
 	if len(dbc) == 0 {
 		return nil, errors.NotFound(ctx, "no certificate for \"%s\"\n", hostname)
 	}
@@ -359,4 +361,13 @@ func (e *CertServer) ServeHTML(ctx context.Context, req *h2gproxy.ServeRequest) 
 	}
 	fmt.Printf("ACME Challenge served for %s (%s)\n", req.Host, sa.Domain)
 	return res, nil
+}
+
+// return true if this host is served with local certs
+func host_allows_local(hostname string) bool {
+	// TODO: think of a better means of configuration
+	if hostname == "api.mycroft.ai" {
+		return true
+	}
+	return false
 }
