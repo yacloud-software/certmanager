@@ -77,13 +77,13 @@ func main() {
 
 	sd := server.NewServerDef()
 	sd.SetPort(*port)
-	sd.Register = server.Register(
+	sd.SetRegister(server.Register(
 		func(server *grpc.Server) error {
 			e := new(CertServer)
 			pb.RegisterCertManagerServer(server, e)
 			return nil
 		},
-	)
+	))
 	fmt.Printf("Initialisation ready.\n")
 	err = server.ServerStartup(sd)
 	utils.Bail("Unable to start server", err)
