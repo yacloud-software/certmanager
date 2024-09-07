@@ -199,12 +199,14 @@ func (e *CertServer) GetPublicCertificate(ctx context.Context, req *pb.PublicCer
 	hostname = rewrite_host_name(hostname)
 	dbc, err := certStore.ByHost(ctx, hostname)
 	if err != nil {
+		fmt.Printf("(db) error getting cert for \"%s\"\n", hostname)
 		return nil, err
 	}
 	if !host_allows_local(hostname) {
 		dbc = filter_public_only(dbc)
 	}
 	if len(dbc) == 0 {
+		fmt.Printf("No cert for \"%s\"\n", hostname)
 		return nil, errors.NotFound(ctx, "no certificate for \"%s\"\n", hostname)
 	}
 	cert := dbc[0]
