@@ -28,6 +28,7 @@ import (
 )
 
 var (
+	fallback_host_name = flag.String("fallback_hostname", "www.yacloud.eu", "a fallback hostname if invalid hosts are requested")
 	//	cert_retrieve_service = flag.String("cert_allowed_service", "37", "service id of the service serving the certs (usually h2gproxy)")
 	debug      = flag.Bool("debug", false, "debug mode")
 	startlego  = flag.Bool("startlego", true, "if false do not start lego and do not support creating public certificates")
