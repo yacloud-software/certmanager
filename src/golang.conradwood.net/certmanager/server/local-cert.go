@@ -30,7 +30,7 @@ func (e *CertServer) GetLocalCertificate(ctx context.Context, req *pb.LocalCerti
 		return nil, errors.InvalidArgs(ctx, "no subject provided", "no subject provided")
 	}
 	u := auth.GetService(ctx)
-	if !*allow_everyone_to_get_local_certificate {
+	if !*allow_everyone_to_get_local_certificate || u == nil {
 		u = auth.GetUser(ctx)
 		if u == nil {
 			return nil, errors.Unauthenticated(ctx, "please log in")
