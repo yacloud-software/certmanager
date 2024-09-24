@@ -5,28 +5,37 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+
 	//	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"flag"
 	"fmt"
+	"math/big"
+	"time"
+
 	pb "golang.conradwood.net/apis/certmanager"
 	"golang.conradwood.net/go-easyops/auth"
 	"golang.conradwood.net/go-easyops/errors"
-	"math/big"
-	"time"
 )
 
 var (
-	default_ca_subject = flag.String("default_ca", "ca.conradwood.net", "ca subject")
+	allow_everyone_to_get_local_certificate = flag.Bool("allow_every_service_to_get_local_certificate", true, "if true every service can get a local certificate")
+	default_ca_subject                      = flag.String("default_ca", "ca.conradwood.net", "ca subject")
 )
 
 func (e *CertServer) GetLocalCertificate(ctx context.Context, req *pb.LocalCertificateRequest) (*pb.Certificate, error) {
 	if req.Subject == "" {
 		return nil, errors.InvalidArgs(ctx, "no subject provided", "no subject provided")
 	}
-	u := auth.GetUser(ctx)
+	u := auth.GetService(ctx)
+	if !*allow_everyone_to_get_local_certificate {
+		u = auth.GetUser(ctx)
+		if u == nil {
+			return nil, errors.Unauthenticated(ctx, "please log in")
+		}
+	}
 	if u == nil {
 		return nil, errors.Unauthenticated(ctx, "please log in")
 	}
