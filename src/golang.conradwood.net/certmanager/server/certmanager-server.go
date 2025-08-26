@@ -48,6 +48,7 @@ type CertServer struct {
 func main() {
 	var err error
 	flag.Parse()
+   server.SetHealth(common.Health_STARTING)
 	fmt.Printf("Starting CertManagerServer...\n")
 	psql, err = sql.Open()
 	utils.Bail("failed to open database", err)
@@ -78,6 +79,7 @@ func main() {
 
 	sd := server.NewServerDef()
 	sd.SetPort(*port)
+sd.SetOnStartupCallback(startup)
 	sd.SetRegister(server.Register(
 		func(server *grpc.Server) error {
 			e := new(CertServer)
@@ -89,6 +91,9 @@ func main() {
 	err = server.ServerStartup(sd)
 	utils.Bail("Unable to start server", err)
 	os.Exit(0)
+}
+func startup() {
+	server.SetHealth(common.Health_READY)
 }
 
 /************************************
@@ -374,3 +379,6 @@ func host_allows_local(hostname string) bool {
 	}
 	return false
 }
+
+
+
