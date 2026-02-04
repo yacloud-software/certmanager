@@ -3,14 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
-	pb "golang.conradwood.net/apis/certmanager"
-	"golang.conradwood.net/apis/common"
-	"golang.conradwood.net/go-easyops/authremote"
-	"golang.conradwood.net/go-easyops/utils"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	pb "golang.conradwood.net/apis/certmanager"
+	"golang.conradwood.net/apis/common"
+	"golang.conradwood.net/go-easyops/authremote"
+	"golang.conradwood.net/go-easyops/utils"
 )
 
 var (
@@ -164,7 +165,7 @@ func list() {
 		}
 		t.NewRow()
 	}
-	fmt.Printf(t.ToPrettyString())
+	fmt.Print(t.ToPrettyString())
 }
 
 func requestCert(host string) error {
