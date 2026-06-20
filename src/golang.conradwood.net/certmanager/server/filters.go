@@ -6,6 +6,7 @@ import (
 )
 
 func is_public_spam(name string) bool {
+	name = strings.ToLower(name)
 	if strings.Contains(name, ".proxy.") {
 		return true
 	}
@@ -19,7 +20,7 @@ func is_public_spam(name string) bool {
 
 }
 func rewrite_host_name(host string) string {
-	hostname := host
+	hostname := strings.ToLower(host)
 	if is_public_spam(host) {
 		fmt.Printf("rewritten hostname %s to be exactly '%s'\n", host, hostname)
 		return "proxy.conradwood.net"
