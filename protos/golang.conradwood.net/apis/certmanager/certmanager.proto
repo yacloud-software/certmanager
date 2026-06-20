@@ -71,12 +71,16 @@ message ImportRequest {
   string PemPrivateKey = 3;  // the pem encoded private key
 }
 
+message CertFilter {
+  bool IncludeExpired=1;
+}
+
 // The CertManager manages certificates, public ones and local ones
 service CertManager {
   // import a public certificate
   rpc ImportPublicCertificate(ImportRequest) returns (Certificate);
   // list all certs
-  rpc ListPublicCertificates(common.Void) returns (CertNameList);
+  rpc ListPublicCertificates(CertFilter) returns (CertNameList);
   // request a certificate. The lego/acme library is designed to synchronous execution.
   // (Its primary usecase seems to be command line tools)
   // this means we can only trigger it but do not get a response.
