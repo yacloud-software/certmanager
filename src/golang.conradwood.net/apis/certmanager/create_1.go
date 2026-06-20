@@ -4,7 +4,8 @@
 */
 
 /* geninfo:
-   filename  : protos/golang.conradwood.net/apis/certmanager/certmanager.proto
+   rendererv : 2
+   filename  : golang.conradwood.net/apis/certmanager/certmanager.proto
    gopackage : golang.conradwood.net/apis/certmanager
    importname: ai_0
    clientfunc: GetCertManager

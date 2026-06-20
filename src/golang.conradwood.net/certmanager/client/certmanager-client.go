@@ -9,7 +9,6 @@ import (
 	"time"
 
 	pb "golang.conradwood.net/apis/certmanager"
-	"golang.conradwood.net/apis/common"
 	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/utils"
 )
@@ -143,7 +142,7 @@ func doimport() {
 
 func list() {
 	ctx := authremote.Context()
-	response, err := certClient.ListPublicCertificates(ctx, &common.Void{})
+	response, err := certClient.ListPublicCertificates(ctx, &pb.CertFilter{})
 	utils.Bail("Failed to ping server", err)
 	t := utils.Table{}
 	t.AddHeaders("Hostname", "Created", "Expiry", "In days")

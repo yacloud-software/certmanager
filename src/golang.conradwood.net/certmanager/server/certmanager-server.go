@@ -8,10 +8,15 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
-	"github.com/go-acme/lego/v3/lego"
 	"net"
 	"strings"
+
+	"github.com/go-acme/lego/v3/lego"
+
 	//	au "golang.conradwood.net/apis/auth"
+	"os"
+	"time"
+
 	pb "golang.conradwood.net/apis/certmanager"
 	"golang.conradwood.net/apis/common"
 	"golang.conradwood.net/apis/h2gproxy"
@@ -23,8 +28,6 @@ import (
 	"golang.conradwood.net/go-easyops/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"os"
-	"time"
 )
 
 var (
@@ -48,7 +51,7 @@ type CertServer struct {
 func main() {
 	var err error
 	flag.Parse()
-   server.SetHealth(common.Health_STARTING)
+	server.SetHealth(common.Health_STARTING)
 	fmt.Printf("Starting CertManagerServer...\n")
 	psql, err = sql.Open()
 	utils.Bail("failed to open database", err)
@@ -79,7 +82,7 @@ func main() {
 
 	sd := server.NewServerDef()
 	sd.SetPort(*port)
-sd.SetOnStartupCallback(startup)
+	sd.SetOnStartupCallback(startup)
 	sd.SetRegister(server.Register(
 		func(server *grpc.Server) error {
 			e := new(CertServer)
@@ -150,7 +153,7 @@ func (e *CertServer) ImportPublicCertificate(ctx context.Context, req *pb.Import
 	}
 	return dbc, nil
 }
-func (e *CertServer) ListPublicCertificates(ctx context.Context, req *common.Void) (*pb.CertNameList, error) {
+func (e *CertServer) ListPublicCertificates(ctx context.Context, req *pb.CertFilter) (*pb.CertNameList, error) {
 	dbc, err := certStore.All(ctx)
 	if err != nil {
 		return nil, err
@@ -158,12 +161,14 @@ func (e *CertServer) ListPublicCertificates(ctx context.Context, req *common.Voi
 	dbc = filter_public_only(dbc)
 	res := &pb.CertNameList{}
 	for _, db := range dbc {
-
 		ci := &pb.CertInfo{
 			Hostname:    db.Host,
 			Created:     db.Created,
 			Expiry:      db.Expiry,
 			LastRenewed: db.LastAttempt,
+		}
+		if !is_in_filter(ci, req) {
+			continue
 		}
 		res.Certificates = append(res.Certificates, ci)
 	}
@@ -380,5 +385,13 @@ func host_allows_local(hostname string) bool {
 	return false
 }
 
-
-
+func is_in_filter(cert *pb.CertInfo, filter *pb.CertFilter) bool {
+	now := time.Now()
+	now_ts := uint32(now.Unix())
+	if !filter.IncludeExpired {
+		if cert.Expiry <= now_ts {
+			return false
+		}
+	}
+	return true
+}
