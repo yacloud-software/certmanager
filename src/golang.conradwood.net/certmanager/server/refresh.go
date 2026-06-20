@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
+	"sort"
+	"time"
+
 	pb "golang.conradwood.net/apis/certmanager"
 	"golang.conradwood.net/go-easyops/authremote"
 	"golang.conradwood.net/go-easyops/prometheus"
 	"golang.conradwood.net/go-easyops/utils"
-	"sort"
-	"time"
 )
 
 const (
@@ -45,6 +46,9 @@ func refresher() {
 		dorand := time.Now().Add(time.Duration(minDays*12) * time.Hour)
 		var to_be_deleted_certs []*requestCertificate
 		for _, c := range certs {
+			if is_public_spam(c.Host) {
+				continue
+			}
 			if *debug {
 				fmt.Printf("Certificate %s: Expiry: %s, LastAttempt: %s\n",
 					c.Host,

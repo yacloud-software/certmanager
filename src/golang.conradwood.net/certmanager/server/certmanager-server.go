@@ -161,6 +161,9 @@ func (e *CertServer) ListPublicCertificates(ctx context.Context, req *pb.CertFil
 	dbc = filter_public_only(dbc)
 	res := &pb.CertNameList{}
 	for _, db := range dbc {
+		if is_public_spam(db.Host) {
+			continue
+		}
 		ci := &pb.CertInfo{
 			Hostname:    db.Host,
 			Created:     db.Created,
@@ -194,15 +197,6 @@ func checkAccess(ctx context.Context, cert *pb.Certificate) error {
 		return err
 	}
 	return nil
-}
-func rewrite_host_name(host string) string {
-	hostname := host
-	if strings.Contains(strings.ToLower(hostname), ".proxy.conradwood") {
-		hostname = "proxy.conradwood.net"
-		fmt.Printf("rewritten hostname %s to be exactly '%s'\n", host, hostname)
-	}
-	return hostname
-
 }
 func (e *CertServer) GetPublicCertificate(ctx context.Context, req *pb.PublicCertRequest) (*pb.ProcessedCertificate, error) {
 	hostname := req.Hostname
