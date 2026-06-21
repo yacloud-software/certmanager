@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"sort"
 	"time"
@@ -16,7 +17,8 @@ const (
 )
 
 var (
-	expiryGauge = prometheus.NewGaugeVec(
+	run_refresher = flag.Bool("run_refresher", true, "if false, do not refresh certificates in the database")
+	expiryGauge   = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "certmanager_cert_age",
 			Help: "V=1 UNIT=s DESC=age of certificate",
@@ -31,6 +33,10 @@ func init() {
 
 func refresher() {
 	for {
+		if !*run_refresher {
+			time.Sleep(time.Duration(5) * time.Second)
+			continue
+		}
 		ctx := authremote.Context()
 		certs, err := certStore.All(ctx)
 		if err != nil {
@@ -49,13 +55,12 @@ func refresher() {
 			if is_public_spam(c.Host) {
 				continue
 			}
-			if *debug {
-				fmt.Printf("Certificate %s: Expiry: %s, LastAttempt: %s\n",
-					c.Host,
-					utils.TimestampString(c.Expiry),
-					utils.TimestampString(c.LastAttempt),
-				)
-			}
+			debug.Debugf("Certificate %s: Expiry: %s, LastAttempt: %s\n",
+				c.Host,
+				utils.TimestampString(c.Expiry),
+				utils.TimestampString(c.LastAttempt),
+			)
+
 			t := time.Unix(int64(c.Expiry), 0)
 			l := prometheus.Labels{"host": c.Host}
 			expiryInSecs := int64(c.Expiry) - time.Now().Unix()

@@ -11,14 +11,17 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
+
 	"github.com/go-acme/lego/v3/certificate"
 	"github.com/go-acme/lego/v3/lego"
 	"github.com/go-acme/lego/v3/registration"
+
 	//	au "golang.conradwood.net/apis/auth"
+	"time"
+
 	pb "golang.conradwood.net/apis/certmanager"
 	"golang.conradwood.net/go-easyops/errors"
 	"golang.conradwood.net/go-easyops/utils"
-	"time"
 )
 
 var (

@@ -59,7 +59,14 @@ func doget(host string) {
 	utils.Bail("Failed to get cert", err)
 	fmt.Printf("Certificate for %s\n", host)
 	fmt.Printf("   Expires    : %s\n", utils.TimestampString(cert.Cert.Expiry))
+	fmt.Printf("   # certs    : %d\n", len(cert.TLSCerts))
 	save(cert.Cert)
+	cp := &CertPrinter{}
+	cp.AddCerts(pem_to_certs([]byte(cert.Cert.PemCA)))
+	cp.AddCerts(pem_to_certs([]byte(cert.Cert.PemCertificate)))
+	cp.AddCertsAsBytes(cert.TLSCerts)
+	fmt.Println(cp.ToString())
+
 }
 func save(cert *pb.Certificate) {
 	if *save_pem == "" {

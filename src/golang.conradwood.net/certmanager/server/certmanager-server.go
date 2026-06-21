@@ -33,7 +33,7 @@ import (
 var (
 	fallback_host_name = flag.String("fallback_hostname", "www.yacloud.eu", "a fallback hostname if invalid hosts are requested")
 	//	cert_retrieve_service = flag.String("cert_allowed_service", "37", "service id of the service serving the certs (usually h2gproxy)")
-	debug      = flag.Bool("debug", false, "debug mode")
+	debug      = utils.DebugFlag("")
 	startlego  = flag.Bool("startlego", true, "if false do not start lego and do not support creating public certificates")
 	port       = flag.Int("port", 4100, "The grpc server port")
 	legoClient *lego.Client
@@ -200,6 +200,7 @@ func checkAccess(ctx context.Context, cert *pb.Certificate) error {
 }
 func (e *CertServer) GetPublicCertificate(ctx context.Context, req *pb.PublicCertRequest) (*pb.ProcessedCertificate, error) {
 	hostname := req.Hostname
+	debug.Printf("request: GetPublicCertificate for \"%s\"\n", hostname)
 	hostname = rewrite_host_name(hostname)
 	dbc, err := certStore.ByHost(ctx, hostname)
 	if err != nil {
