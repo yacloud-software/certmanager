@@ -62,9 +62,9 @@ func doget(host string) {
 	fmt.Printf("   # certs    : %d\n", len(cert.TLSCerts))
 	save(cert.Cert)
 	cp := &CertPrinter{}
-	cp.AddCerts(pem_to_certs([]byte(cert.Cert.PemCA)))
-	cp.AddCerts(pem_to_certs([]byte(cert.Cert.PemCertificate)))
-	cp.AddCertsAsBytes(cert.TLSCerts)
+	cp.AddCerts("ca", pem_to_certs([]byte(cert.Cert.PemCA)))
+	cp.AddCerts("cert", pem_to_certs([]byte(cert.Cert.PemCertificate)))
+	cp.AddCertsAsBytes("tlscerts", cert.TLSCerts)
 	fmt.Println(cp.ToString())
 
 }
